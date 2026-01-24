@@ -32,7 +32,7 @@ export interface TableConfig {
 })
 export class TabulatorTableComponent implements OnInit {
     @ViewChild('tableContainer') tableContainer!: ElementRef;
-    
+
     // Configuration inputs
     @Input() config: TableConfig = {
         title: 'Data Table',
@@ -82,35 +82,44 @@ export class TabulatorTableComponent implements OnInit {
         const tableColumns = this.columns.length > 0 ? this.columns : this.getDefaultColumns();
 
         // Configure columns based on editable mode
-        const configuredColumns = tableColumns.map(col => ({
+        const configuredColumns = tableColumns.map((col) => ({
             ...col,
-            editor: this.config.editable ? (col.editor || 'input') : false,
-            editable: this.config.editable ? (col.editable !== false) : false
+            editor: this.config.editable ? (col.editor !== undefined ? col.editor : 'input') : false,
+            editable: this.config.editable ? col.editable !== false : false,
+            resizable: true,
+            headerSort: col.headerSort !== false,
+            headerFilter: col.headerFilter // Use column-specific setting
         }));
 
         const tableConfig: any = {
             data: [],
-            layout: 'fitColumns',
-            responsiveLayout: 'collapse',
+            layout: 'fitDataFill', // Better for responsive + fixed widths
+            responsiveLayout: false,
             locale: 'en-us',
             placeholder: 'No Data Available',
             columns: configuredColumns,
-            
-            // Optional features
+
+            // Pagination
             pagination: this.config.pagination ? 'local' : false,
             paginationSize: this.config.paginationSize || 20,
             paginationSizeSelector: [10, 20, 50, 100],
-            
+
+            // Features
             movableColumns: this.config.movableColumns,
             movableRows: this.config.editable,
-            selectable: this.config.selectable,
-            selectableRangeMode: this.config.selectable ? 'click' : null,
-            
+            selectable: this.config.selectable ? 1 : false,
+
             clipboard: true,
             clipboardCopyStyled: false,
+
             history: this.config.editable,
-            headerFilter: this.config.headerFilter ? 'input' : false,
-            headerFilterPlaceholder: 'Search...'
+
+            // Height
+            height: '600px',
+
+            // Virtual rendering for performance
+            renderVertical: 'virtual',
+            renderHorizontal: 'virtual'
         };
 
         this.table = new Tabulator('#data-table', tableConfig);
@@ -118,14 +127,12 @@ export class TabulatorTableComponent implements OnInit {
         // Event listeners
         if (this.config.editable) {
             this.table.on('cellEdited', (cell: any) => {
-                console.log('📝 Cell edited:', cell.getRow().getIndex());
                 const updatedData = this.table.getData();
                 this.tableData = updatedData;
                 this.dataChanged.emit(updatedData);
             });
 
             this.table.on('rowMoved', () => {
-                console.log('🔄 Row moved');
                 const updatedData = this.table.getData();
                 this.tableData = updatedData;
                 this.dataChanged.emit(updatedData);
@@ -136,28 +143,84 @@ export class TabulatorTableComponent implements OnInit {
             this.table.on('rowSelectionChanged', (data: any, rows: any) => {
                 const selectedData = rows.map((row: any) => row.getData());
                 this.rowSelected.emit(selectedData);
-                console.log('✅ Selected rows:', selectedData.length);
             });
         }
 
-        console.log('✅ Tabulator initialized (Editable: ' + this.config.editable + ')');
+        console.log('✅ Tabulator initialized');
     }
-
     /**
      * Get default columns for the table
      */
     private getDefaultColumns() {
         return [
-            { title: '#', field: 'rowNumber', width: 50, editor: false },
-            { title: 'Message ID', field: 'messageId', width: 150, headerFilter: 'input' },
-            { title: 'Ticker ID', field: 'tickerId', width: 120, headerFilter: 'input' },
-            { title: 'CUSIP', field: 'cusip', width: 120, headerFilter: 'input' },
-            { title: 'Bias', field: 'bias', width: 120, headerFilter: 'input' },
-            { title: 'Date', field: 'date', width: 120, sorter: 'date', headerFilter: 'input' },
-            { title: 'BID', field: 'bid', width: 100, align: 'center', headerFilter: 'input' },
-            { title: 'MID', field: 'mid', width: 100, align: 'center', headerFilter: 'input' },
-            { title: 'ASK', field: 'ask', width: 100, align: 'center', headerFilter: 'input' },
-            { title: 'Source', field: 'source', width: 120, headerFilter: 'input' }
+            {
+                title: '#',
+                field: 'rowNumber',
+                width: 60,
+                editor: false,
+                headerSort: false,
+                frozen: true,
+                hozAlign: 'center',
+                headerFilter: false // No filter for row numbers
+            },
+            {
+                title: 'Message ID',
+                field: 'messageId',
+                width: 180,
+                headerFilter: false // Disable filters to show clean headers
+            },
+            {
+                title: 'Ticker ID',
+                field: 'tickerId',
+                width: 140,
+                headerFilter: false
+            },
+            {
+                title: 'CUSIP',
+                field: 'cusip',
+                width: 140,
+                headerFilter: false
+            },
+            {
+                title: 'Bias',
+                field: 'bias',
+                width: 140,
+                headerFilter: false
+            },
+            {
+                title: 'Date',
+                field: 'date',
+                width: 120,
+                sorter: 'date',
+                headerFilter: false
+            },
+            {
+                title: 'BID',
+                field: 'bid',
+                width: 100,
+                hozAlign: 'center',
+                headerFilter: false
+            },
+            {
+                title: 'MID',
+                field: 'mid',
+                width: 100,
+                hozAlign: 'center',
+                headerFilter: false
+            },
+            {
+                title: 'ASK',
+                field: 'ask',
+                width: 100,
+                hozAlign: 'center',
+                headerFilter: false
+            },
+            {
+                title: 'Source',
+                field: 'source',
+                width: 140,
+                headerFilter: false
+            }
         ];
     }
 
@@ -171,31 +234,34 @@ export class TabulatorTableComponent implements OnInit {
         console.log('📥 Excel file selected:', file.name);
         this.isLoading = true;
 
-        this.tabulatorService.parseExcelFile(file).then(
-            (tableData: TableData) => {
-                console.log('✅ Excel parsed:', tableData.data.length, 'rows');
-                this.loadTableData(tableData.data);
-                this.dataLoaded.emit(tableData.data);
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Success',
-                    detail: `Loaded ${tableData.data.length} rows from Excel`
-                });
-                // Reset file input
-                event.target.value = '';
-            },
-            (error) => {
-                console.error('❌ Error parsing Excel:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: error.message
-                });
-                event.target.value = '';
-            }
-        ).finally(() => {
-            this.isLoading = false;
-        });
+        this.tabulatorService
+            .parseExcelFile(file)
+            .then(
+                (tableData: TableData) => {
+                    console.log('✅ Excel parsed:', tableData.data.length, 'rows');
+                    this.loadTableData(tableData.data);
+                    this.dataLoaded.emit(tableData.data);
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Success',
+                        detail: `Loaded ${tableData.data.length} rows from Excel`
+                    });
+                    // Reset file input
+                    event.target.value = '';
+                },
+                (error) => {
+                    console.error('❌ Error parsing Excel:', error);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: error.message
+                    });
+                    event.target.value = '';
+                }
+            )
+            .finally(() => {
+                this.isLoading = false;
+            });
     }
 
     /**
@@ -214,28 +280,31 @@ export class TabulatorTableComponent implements OnInit {
         console.log('📥 Fetching from S3:', this.s3BucketName, this.s3FileName);
         this.isLoading = true;
 
-        this.tabulatorService.fetchFromS3(this.s3BucketName, this.s3FileName).subscribe({
-            next: (tableData: TableData) => {
-                console.log('✅ S3 data fetched:', tableData.data.length, 'rows');
-                this.loadTableData(tableData.data);
-                this.dataLoaded.emit(tableData.data);
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Success',
-                    detail: `Loaded ${tableData.data.length} rows from S3`
-                });
-            },
-            error: (error) => {
-                console.error('❌ Error fetching S3 data:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Failed to fetch data from S3'
-                });
-            }
-        }).add(() => {
-            this.isLoading = false;
-        });
+        this.tabulatorService
+            .fetchFromS3(this.s3BucketName, this.s3FileName)
+            .subscribe({
+                next: (tableData: TableData) => {
+                    console.log('✅ S3 data fetched:', tableData.data.length, 'rows');
+                    this.loadTableData(tableData.data);
+                    this.dataLoaded.emit(tableData.data);
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Success',
+                        detail: `Loaded ${tableData.data.length} rows from S3`
+                    });
+                },
+                error: (error) => {
+                    console.error('❌ Error fetching S3 data:', error);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Failed to fetch data from S3'
+                    });
+                }
+            })
+            .add(() => {
+                this.isLoading = false;
+            });
     }
 
     /**
