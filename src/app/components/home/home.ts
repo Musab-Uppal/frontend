@@ -14,25 +14,12 @@ import { TooltipModule } from 'primeng/tooltip';
 import { TabulatorTableComponent, TableConfig } from '../tabulator-table/tabulator-table.component';
 import { TableStateService } from '../home/table-state.service';
 import { ApiService } from '../../services/api.service';
+import { StackedChartComponent } from '../stacked-chart/stacked-chart.component';
 
 @Component({
     selector: 'app-home',
     standalone: true,
-    imports: [
-        CommonModule,
-        CardModule,
-        ChartModule,
-        TableModule,
-        ChipModule,
-        ButtonModule,
-        InputTextModule,
-        BadgeModule,
-        DialogModule,
-        AutoCompleteModule,
-        FormsModule,
-        TooltipModule,
-        TabulatorTableComponent
-    ],
+    imports: [CommonModule, CardModule, ChartModule, TableModule, ChipModule, ButtonModule, InputTextModule, BadgeModule, DialogModule, StackedChartComponent, AutoCompleteModule, FormsModule, TooltipModule, TabulatorTableComponent],
     templateUrl: './home.html',
     styleUrls: ['./home.css']
 })
@@ -43,7 +30,7 @@ export class Home implements OnInit {
 
     // Filter data - MAIN conditions
     filterConditions: any[] = [{ column: 'Bwic Cover', operator: 'Equal to', values: 'JPMO', logicalOperator: 'AND' }];
-    
+
     // Filter data - SUBGROUPS (for nested filtering)
     filterSubgroups: any[] = [];
 
@@ -258,33 +245,29 @@ export class Home implements OnInit {
     }
 
     // ==================== FILTER SEARCH METHODS ====================
-    
+
     searchColumn(event: any) {
         console.log('🔍 Searching columns:', event.query);
         const query = event.query.toLowerCase();
-        this.filteredColumnOptions = this.columnOptions.filter((option) => 
-            option.toLowerCase().includes(query)
-        );
+        this.filteredColumnOptions = this.columnOptions.filter((option) => option.toLowerCase().includes(query));
         console.log('📊 Filtered columns:', this.filteredColumnOptions);
     }
 
     searchOperator(event: any) {
         console.log('🔍 Searching operators:', event.query);
         const query = event.query.toLowerCase();
-        this.filteredOperatorOptions = this.operatorOptions.filter((option) => 
-            option.toLowerCase().includes(query)
-        );
+        this.filteredOperatorOptions = this.operatorOptions.filter((option) => option.toLowerCase().includes(query));
         console.log('📊 Filtered operators:', this.filteredOperatorOptions);
     }
 
     // ==================== FILTER DIALOG METHODS ====================
-    
+
     showFilterDialog() {
         this.filterVisible = true;
     }
 
     // ==================== MAIN CONDITIONS ====================
-    
+
     addCondition() {
         console.log('➕ Adding new condition');
         this.filterConditions.push({ column: '', operator: '', values: '', logicalOperator: 'AND' });
@@ -299,7 +282,7 @@ export class Home implements OnInit {
     }
 
     // ==================== SUBGROUPS ====================
-    
+
     addSubgroup() {
         console.log('✅ Adding new subgroup');
         this.filterSubgroups.push({
@@ -311,7 +294,7 @@ export class Home implements OnInit {
 
     removeSubgroup(subgroupId: number) {
         console.log('🗑️ Removing subgroup with id:', subgroupId);
-        const index = this.filterSubgroups.findIndex(s => s.id === subgroupId);
+        const index = this.filterSubgroups.findIndex((s) => s.id === subgroupId);
         if (index > -1) {
             this.filterSubgroups.splice(index, 1);
         }
@@ -319,7 +302,7 @@ export class Home implements OnInit {
 
     addSubgroupCondition(subgroupId: number) {
         console.log('➕ Adding condition to subgroup:', subgroupId);
-        const subgroup = this.filterSubgroups.find(s => s.id === subgroupId);
+        const subgroup = this.filterSubgroups.find((s) => s.id === subgroupId);
         if (subgroup) {
             subgroup.conditions.push({ column: '', operator: '', values: '', logicalOperator: 'AND' });
         }
@@ -327,7 +310,7 @@ export class Home implements OnInit {
 
     removeSubgroupCondition(subgroupId: number, conditionIndex: number) {
         console.log('🗑️ Removing condition at index:', conditionIndex, 'from subgroup:', subgroupId);
-        const subgroup = this.filterSubgroups.find(s => s.id === subgroupId);
+        const subgroup = this.filterSubgroups.find((s) => s.id === subgroupId);
         if (subgroup) {
             subgroup.conditions.splice(conditionIndex, 1);
             if (subgroup.conditions.length === 0) {
@@ -338,14 +321,14 @@ export class Home implements OnInit {
 
     updateSubgroupLogicalOperator(subgroupId: number, operator: string) {
         console.log('🔄 Updating subgroup operator to:', operator);
-        const subgroup = this.filterSubgroups.find(s => s.id === subgroupId);
+        const subgroup = this.filterSubgroups.find((s) => s.id === subgroupId);
         if (subgroup) {
             subgroup.logicalOperator = operator;
         }
     }
 
     // ==================== FILTER ACTIONS ====================
-    
+
     removeAllFilters() {
         console.log('🗑️ Removing all filters');
         this.filterConditions = [];
@@ -382,7 +365,7 @@ export class Home implements OnInit {
     }
 
     // ==================== TABLE ACTIONS ====================
-    
+
     toggleTableExpansion() {
         console.log('🔄 Toggling table expansion');
         this.isTableExpanded = !this.isTableExpanded;

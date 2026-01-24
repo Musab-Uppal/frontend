@@ -5,6 +5,7 @@
             <!-- ================= TOP GRID ================= -->
             <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
                 <!-- ================= AVAILABLE COLORS ================= -->
+
                 <div class="xl:col-span-5">
                     <p-card class="!shadow-sm !border-gray-200 !rounded-[20px] w-full h-full">
                         <!-- HEADER -->
@@ -16,8 +17,8 @@
                         <div class="mt-3 border-t border-gray-200"></div>
 
                         <!-- CONTENT -->
-                        <div class="px-5 pt-4 pb-5 h-[240px]">
-                            <p-chart type="bar" [data]="availableColorsChart" [options]="availableColorsOptions" class="h-full w-full block"></p-chart>
+                        <div class="h-full w-full">
+                            <stacked-chart></stacked-chart>
                         </div>
                     </p-card>
                 </div>
