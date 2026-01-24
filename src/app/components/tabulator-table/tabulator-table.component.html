@@ -1,44 +1,10 @@
 <div class="p-6 space-y-4">
+    <!-- TOAST NOTIFICATIONS -->
+    <p-toast position="top-right"></p-toast>
 
-  <!-- TOAST NOTIFICATIONS -->
-  <p-toast position="top-right"></p-toast>
+    <!-- Top Toolbar -->
+    <div class="flex flex-wrap items-center justify-between gap-3"></div>
 
-  <!-- Top Toolbar -->
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <div class="flex flex-wrap items-center gap-2">
-      <input
-        type="text"
-        pInputText
-        placeholder="Search Message ID"
-        class="p-inputtext-sm w-64"
-      />
-      <button pButton label="Add New" icon="pi pi-plus" class="p-button-sm p-button-outlined" 
-        *ngIf="config.editable"
-        (click)="addNewRow()"></button>
-      <!-- <button pButton label="Run Rules" icon="pi pi-cog" class="p-button-sm p-button-outlined"></button>
-      <button pButton label="Filters" icon="pi pi-filter" class="p-button-sm p-button-outlined"></button>
-      <button pButton label="Import via Excel" icon="pi pi-upload" class="p-button-sm p-button-outlined"
-        *ngIf="config.allowImport"
-        (click)="fileInput.click()">
-      </button> -->
-      <input #fileInput type="file" hidden accept=".xlsx,.xls" (change)="onExcelFileSelected($any($event))"/>
-    </div>
-
-    <div class="flex items-center gap-3">
-      <div class="text-sm text-gray-600">Total Count: <strong>{{ tableData.length }}</strong></div>
-      <button
-        pButton
-        label="Export Excel"
-        icon="pi pi-download"
-        class="p-button-sm p-button-rounded"
-        style="background-color:white;color:#0b0b14;border-color:#d1d5db"
-        *ngIf="config.allowExport"
-        (click)="exportToExcel()"
-      ></button>
-    </div>
-  </div>
-
-  <!-- TABLE CONTAINER - Figma Style -->
-  <div id="data-table" #tableContainer class="rounded-[10.12px] overflow-hidden border border-gray-200"></div>
-
+    <!-- TABLE CONTAINER - Figma Style -->
+    <div id="data-table" #tableContainer class="rounded-[10.12px] overflow-hidden border border-gray-200"></div>
 </div>

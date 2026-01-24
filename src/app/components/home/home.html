@@ -17,8 +17,7 @@
 
                         <!-- CONTENT -->
                         <div class="px-5 pt-4 pb-5 h-[240px]">
-                            <p-chart type="bar" [data]="availableColorsChart" [options]="availableColorsOptions"
-                                class="h-full w-full block"></p-chart>
+                            <p-chart type="bar" [data]="availableColorsChart" [options]="availableColorsOptions" class="h-full w-full block"></p-chart>
                         </div>
                     </p-card>
                 </div>
@@ -44,13 +43,11 @@
                         <!-- Top dark grouped actions -->
                         <div class="bg-white rounded-[20px] mb-3 flex flex-col gap-3">
                             <div class="bg-[#1c233a] rounded-[20px] overflow-hidden">
-                                <button pButton label="Refresh Colors Now" (click)="refreshColors()"
-                                    class="w-full !bg-transparent hover:!bg-white/5 !text-white !rounded-none !py-4 !text-sm font-semibold"></button>
+                                <button pButton label="Refresh Colors Now" (click)="refreshColors()" class="w-full !bg-transparent hover:!bg-white/5 !text-white !rounded-none !py-4 !text-sm font-semibold"></button>
 
                                 <div class="h-px bg-white/10"></div>
 
-                                <button pButton label="Override & Run" (click)="overrideAndRun()"
-                                    class="w-full !bg-transparent hover:!bg-white/5 !text-white !rounded-none !py-4 !text-sm font-semibold"></button>
+                                <button pButton label="Override & Run" (click)="overrideAndRun()" class="w-full !bg-transparent hover:!bg-white/5 !text-white !rounded-none !py-4 !text-sm font-semibold"></button>
                             </div>
                             <div class="py-0.5 text-center text-xs text-gray-500">
                                 Next Run in
@@ -61,17 +58,13 @@
                         <!-- Bottom actions card -->
                         <div class="px-1 flex-1">
                             <div class="bg-white rounded-[18px] overflow-hidden shadow-sm">
-                                <button pButton icon="pi pi-upload" label="Import Sample"
-                                    class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
+                                <button pButton icon="pi pi-upload" label="Import Sample" class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
 
-                                <button pButton icon="pi pi-sliders-h" label="Rules & Presets"
-                                    class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
+                                <button pButton icon="pi pi-sliders-h" label="Rules & Presets" class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
 
-                                <button pButton icon="pi pi-history" label="Restore last run"
-                                    class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
+                                <button pButton icon="pi pi-history" label="Restore last run" class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
 
-                                <button pButton icon="pi pi-clock" label="Cron Jobs & Time"
-                                    class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
+                                <button pButton icon="pi pi-clock" label="Cron Jobs & Time" class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
                             </div>
                         </div>
                     </div>
@@ -85,19 +78,15 @@
             <div class="flex flex-col sm:flex-row flex-wrap items-center gap-4">
                 <!-- Search -->
                 <div class="relative w-full sm:w-64">
-                    <input pInputText type="text" placeholder="Search Message ID"
-                        class="w-full !rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100" />
-                    <i
-                        class="pi pi-search absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    <input pInputText type="text" placeholder="Search Message ID" class="w-full !rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100" />
+                    <i class="pi pi-search absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                 </div>
 
                 <!-- Filters & Import -->
                 <div class="flex flex-wrap gap-3">
-                    <button pButton icon="pi pi-filter" label="Filters" (click)="showFilterDialog()"
-                        class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"></button>
+                    <button pButton icon="pi pi-filter" label="Filters" (click)="showFilterDialog()" class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"></button>
 
-                    <button pButton icon="pi pi-download" label="Import ID via Excel" (click)="importViaExcel()"
-                        class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"></button>
+                    <button pButton icon="pi pi-download" label="Import ID via Excel" (click)="importViaExcel()" class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"></button>
                 </div>
 
                 <!-- Spacer -->
@@ -106,15 +95,12 @@
                 <!-- Export / Count / Fetch -->
                 <div class="flex items-center gap-3 flex-wrap">
                     <!-- Export -->
-                    <button pButton icon="pi pi-download" label="Export All" (click)="exportAll()"
-                        class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"></button>
+                    <button pButton icon="pi pi-download" label="Export All" (click)="exportAll()" class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"></button>
 
                     <!-- Total Count -->
-                    <div
-                        class="flex items-center gap-3 px-5 py-2.5 rounded-full border border-gray-300 bg-gray-50 text-gray-700 font-medium">
+                    <div class="flex items-center gap-3 px-5 py-2.5 rounded-full border border-gray-300 bg-gray-50 text-gray-700 font-medium">
                         <span>Total Count</span>
-                        <span class="px-3 py-0.5 bg-white rounded-full shadow text-sm font-semibold"> {{
-                            tableData.length }} </span>
+                        <span class="px-3 py-0.5 bg-white rounded-full shadow text-sm font-semibold"> {{ tableData.length }} </span>
                     </div>
                 </div>
             </div>
@@ -122,8 +108,7 @@
             <!-- Active Filters -->
             <div class="flex flex-wrap items-center gap-3 mt-5">
                 <!-- Filter Chip -->
-                <div
-                    class="flex items-center gap-3 px-5 py-2.5 rounded-full bg-gray-100 text-gray-900 border border-gray-200">
+                <div class="flex items-center gap-3 px-5 py-2.5 rounded-full bg-gray-100 text-gray-900 border border-gray-200">
                     <i class="pi pi-filter text-gray-700"></i>
                     <span class="text-sm font-medium whitespace-nowrap"> Color : Bwic Cover | Px : Less than 100 </span>
                     <button class="text-red-500 hover:text-red-600" aria-label="Remove filter">
@@ -132,8 +117,7 @@
                 </div>
 
                 <!-- Another Filter Chip -->
-                <div
-                    class="flex items-center gap-3 px-5 py-2.5 rounded-full bg-gray-100 text-gray-900 border border-gray-200">
+                <div class="flex items-center gap-3 px-5 py-2.5 rounded-full bg-gray-100 text-gray-900 border border-gray-200">
                     <i class="pi pi-filter text-gray-700"></i>
                     <span class="text-sm font-medium whitespace-nowrap"> Color : Market | Date : Today </span>
                     <button class="text-red-500 hover:text-red-600" aria-label="Remove filter">
@@ -141,8 +125,7 @@
                     </button>
                 </div>
 
-                <button
-                    class="flex items-center gap-2 !rounded-full !px-5 !py-2.5 !bg-white !text-gray-700 !border !border-gray-300 hover:!bg-gray-50">
+                <button class="flex items-center gap-2 !rounded-full !px-5 !py-2.5 !bg-white !text-gray-700 !border !border-gray-300 hover:!bg-gray-50">
                     <i class="pi pi-trash text-sm"></i>
                     Remove all filters
                 </button>
@@ -150,28 +133,24 @@
                 <div class="flex-1"></div>
 
                 <!-- Fetch -->
-                <button pButton label="Fetch Data" (click)="fetchData()"
-                    class="!bg-gray-900 !text-white !rounded-full !px-5 !py-2.5 text-sm font-medium hover:!bg-black"></button>
+                <button pButton label="Fetch Data" (click)="fetchData()" class="!bg-gray-900 !text-white !rounded-full !px-5 !py-2.5 text-sm font-medium hover:!bg-black"></button>
             </div>
         </div>
 
         <!-- ================= TABULATOR TABLE ================= -->
-        <app-tabulator-table
-            [config]="tabulatorConfig"
-            [initialData]="tableData"
-            (dataChanged)="onTableDataChanged($event)"
-            (dataLoaded)="onTableDataLoaded($event)"
-            (rowSelected)="onTableRowSelected($event)"
-        ></app-tabulator-table>
+        <app-tabulator-table [config]="tabulatorConfig" [initialData]="tableData" (dataChanged)="onTableDataChanged($event)" (dataLoaded)="onTableDataLoaded($event)" (rowSelected)="onTableRowSelected($event)"></app-tabulator-table>
 
         <!-- ================= LEGACY PRIMENG TABLE (HIDDEN) ================= -->
         <p-card class="!shadow-sm !rounded-2xl !border-gray-200" [ngStyle]="{'display': 'none'}">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-900">Data Table (Legacy)</h3>
-                <button pButton [icon]="isTableExpanded ? 'pi pi-compress' : 'pi pi-expand'"
+                <button
+                    pButton
+                    [icon]="isTableExpanded ? 'pi pi-compress' : 'pi pi-expand'"
                     class="p-button-text p-button-plain !text-gray-500 hover:!text-gray-700"
                     (click)="toggleTableExpansion()"
-                    [pTooltip]="isTableExpanded ? 'Minimize Table' : 'Expand Table'"></button>
+                    [pTooltip]="isTableExpanded ? 'Minimize Table' : 'Expand Table'"
+                ></button>
             </div>
             <p-table [value]="tableData" [scrollable]="true" scrollHeight="500px">
                 <ng-template pTemplate="header">
@@ -197,9 +176,12 @@
                         <td class="font-mono">{{ row.cusip }}</td>
 
                         <td>
-                            <span class="px-3 py-1 rounded-full text-xs font-medium" [class]="row.bias === 'BWIC_COVER' 
+                            <span
+                                class="px-3 py-1 rounded-full text-xs font-medium"
+                                [class]="row.bias === 'BWIC_COVER' 
                   ? 'bg-purple-100 text-purple-700' 
-                  : 'bg-blue-100 text-blue-700'">
+                  : 'bg-blue-100 text-blue-700'"
+                            >
                                 {{ row.bias }}
                             </span>
                         </td>
@@ -220,11 +202,9 @@
     </div>
 
     <!-- ================= FILTER MODAL ================= -->
-    <p-dialog [(visible)]="filterVisible" [modal]="true" [draggable]="false" [style]="{ width: '900px' }"
-        header="Filter" class="filter-dialog !rounded-[20px]">
+    <p-dialog [(visible)]="filterVisible" [modal]="true" [draggable]="false" [style]="{ width: '900px' }" header="Filter" class="filter-dialog !rounded-[20px]">
         <!-- SINGLE MAIN CONTAINER -->
         <div class="bg-white rounded-[20px] overflow-hidden px-8 py-6">
-
             <!-- HEADERS ROW -->
             <div class="flex items-center gap-4 mb-6 px-4">
                 <div class="w-20"></div>
@@ -235,14 +215,11 @@
             </div>
 
             <!-- MAIN CONDITIONS -->
-            <div *ngFor="let condition of filterConditions; let i = index"
-                class="flex items-center gap-4 mb-3 px-4 py-3">
-
+            <div *ngFor="let condition of filterConditions; let i = index" class="flex items-center gap-4 mb-3 px-4 py-3">
                 <!-- WHERE/AND DROPDOWN -->
                 <div class="w-20">
                     <span *ngIf="i === 0" class="text-sm font-medium text-gray-700">Where</span>
-                    <select *ngIf="i > 0" [(ngModel)]="condition.logicalOperator"
-                        class="text-sm font-medium text-gray-700 px-2 py-1 border border-gray-300 rounded bg-white">
+                    <select *ngIf="i > 0" [(ngModel)]="condition.logicalOperator" class="text-sm font-medium text-gray-700 px-2 py-1 border border-gray-300 rounded bg-white">
                         <option value="AND">AND</option>
                         <option value="OR">OR</option>
                     </select>
@@ -262,18 +239,12 @@
 
                 <!-- COLUMN DROPDOWN -->
                 <div class="w-48">
-                    <p-autocomplete [(ngModel)]="condition.column" [suggestions]="filteredColumnOptions"
-                        (completeMethod)="searchColumn($event)" placeholder="ColorType" [dropdown]="true"
-                        class="w-full">
-                    </p-autocomplete>
+                    <p-autocomplete [(ngModel)]="condition.column" [suggestions]="filteredColumnOptions" (completeMethod)="searchColumn($event)" placeholder="ColorType" [dropdown]="true" class="w-full"> </p-autocomplete>
                 </div>
 
                 <!-- OPERATOR DROPDOWN -->
                 <div class="w-40">
-                    <p-autocomplete [(ngModel)]="condition.operator" [suggestions]="filteredOperatorOptions"
-                        (completeMethod)="searchOperator($event)" placeholder="is equal to" [dropdown]="true"
-                        class="w-full">
-                    </p-autocomplete>
+                    <p-autocomplete [(ngModel)]="condition.operator" [suggestions]="filteredOperatorOptions" (completeMethod)="searchOperator($event)" placeholder="is equal to" [dropdown]="true" class="w-full"> </p-autocomplete>
                 </div>
 
                 <!-- VALUES INPUT -->
@@ -283,23 +254,18 @@
 
                 <!-- DELETE BUTTON -->
                 <div class="flex-shrink-0">
-                    <button pButton icon="pi pi-trash" class="p-button-text text-gray-400 hover:text-red-500"
-                        (click)="removeCondition(i)"></button>
+                    <button pButton icon="pi pi-trash" class="p-button-text text-gray-400 hover:text-red-500" (click)="removeCondition(i)"></button>
                 </div>
             </div>
 
             <!-- FILTER SUBGROUPS -->
             <div *ngFor="let subgroup of filterSubgroups" class="mb-6 pl-8">
-
                 <!-- SUBGROUP CONDITIONS -->
-                <div *ngFor="let condition of subgroup.conditions; let j = index"
-                    class="flex items-center gap-4 mb-3 px-4 py-3">
-
+                <div *ngFor="let condition of subgroup.conditions; let j = index" class="flex items-center gap-4 mb-3 px-4 py-3">
                     <!-- WHERE/LOGICAL OPERATOR FOR SUBGROUP CONDITIONS -->
                     <div class="w-20">
                         <span *ngIf="j === 0" class="text-sm text-gray-600">Where</span>
-                        <select *ngIf="j > 0" [(ngModel)]="condition.logicalOperator"
-                            class="text-sm text-gray-600 px-2 py-1 border border-gray-300 rounded bg-white">
+                        <select *ngIf="j > 0" [(ngModel)]="condition.logicalOperator" class="text-sm text-gray-600 px-2 py-1 border border-gray-300 rounded bg-white">
                             <option value="AND">AND</option>
                             <option value="OR">OR</option>
                         </select>
@@ -319,18 +285,12 @@
 
                     <!-- COLUMN -->
                     <div class="w-48">
-                        <p-autocomplete [(ngModel)]="condition.column" [suggestions]="filteredColumnOptions"
-                            (completeMethod)="searchColumn($event)" placeholder="Bwic Cover" [dropdown]="true"
-                            class="w-full">
-                        </p-autocomplete>
+                        <p-autocomplete [(ngModel)]="condition.column" [suggestions]="filteredColumnOptions" (completeMethod)="searchColumn($event)" placeholder="Bwic Cover" [dropdown]="true" class="w-full"> </p-autocomplete>
                     </div>
 
                     <!-- OPERATOR -->
                     <div class="w-40">
-                        <p-autocomplete [(ngModel)]="condition.operator" [suggestions]="filteredOperatorOptions"
-                            (completeMethod)="searchOperator($event)" placeholder="is equal to" [dropdown]="true"
-                            class="w-full">
-                        </p-autocomplete>
+                        <p-autocomplete [(ngModel)]="condition.operator" [suggestions]="filteredOperatorOptions" (completeMethod)="searchOperator($event)" placeholder="is equal to" [dropdown]="true" class="w-full"> </p-autocomplete>
                     </div>
 
                     <!-- VALUES -->
@@ -340,18 +300,14 @@
 
                     <!-- DELETE -->
                     <div class="flex-shrink-0">
-                        <button pButton icon="pi pi-trash" class="p-button-text text-gray-400 hover:text-red-500"
-                            (click)="removeSubgroupCondition(subgroup.id, j)"></button>
+                        <button pButton icon="pi pi-trash" class="p-button-text text-gray-400 hover:text-red-500" (click)="removeSubgroupCondition(subgroup.id, j)"></button>
                     </div>
                 </div>
 
                 <!-- ADD CONDITION / ADD SUBGROUP BUTTONS INSIDE SUBGROUP -->
                 <div class="flex items-center gap-4 px-4 mt-3 mb-4">
-                    <button pButton icon="pi pi-plus-circle" label="Add Condition"
-                        class="p-button-text text-gray-600 text-xs"
-                        (click)="addSubgroupCondition(subgroup.id)"></button>
-                    <button pButton icon="pi pi-plus-circle" label="Add Subgroup"
-                        class="p-button-text text-gray-600 text-xs" (click)="addSubgroup()"></button>
+                    <button pButton icon="pi pi-plus-circle" label="Add Condition" class="p-button-text text-gray-600 text-xs" (click)="addSubgroupCondition(subgroup.id)"></button>
+                    <button pButton icon="pi pi-plus-circle" label="Add Subgroup" class="p-button-text text-gray-600 text-xs" (click)="addSubgroup()"></button>
                 </div>
             </div>
 
@@ -361,43 +317,30 @@
             <!-- FOOTER ACTIONS -->
             <div class="flex items-center gap-4 flex-wrap">
                 <!-- ADD CONDITION -->
-                <button pButton icon="pi pi-plus-circle" label="Add Condition" class="p-button-text text-gray-600"
-                    (click)="addCondition()"></button>
+                <button pButton icon="pi pi-plus-circle" label="Add Condition" class="p-button-text text-gray-600" (click)="addCondition()"></button>
 
                 <!-- ADD GROUP -->
-                <button pButton icon="pi pi-plus-circle" label="Add Group" class="p-button-text text-gray-600"
-                    (click)="addSubgroup()"></button>
+                <button pButton icon="pi pi-plus-circle" label="Add Group" class="p-button-text text-gray-600" (click)="addSubgroup()"></button>
 
                 <div class="flex-1"></div>
 
                 <!-- REMOVE ALL -->
-                <button pButton icon="pi pi-trash" label="Remove all filters"
-                    class="p-button-text !text-red-500 font-light" (click)="removeAllFilters()"></button>
+                <button pButton icon="pi pi-trash" label="Remove all filters" class="p-button-text !text-red-500 font-light" (click)="removeAllFilters()"></button>
 
                 <!-- APPLY -->
-                <button pButton icon="pi pi-save" label="Apply Filters"
-                    class="!bg-[#2C3E50] hover:!bg-[#243746] !text-white !rounded-full !border !border-[#2C3E50] !px-6 !py-2.5 text-sm font-medium"
-                    (click)="applyFilters()"></button>
+                <button pButton icon="pi pi-save" label="Apply Filters" class="!bg-[#2C3E50] hover:!bg-[#243746] !text-white !rounded-full !border !border-[#2C3E50] !px-6 !py-2.5 text-sm font-medium" (click)="applyFilters()"></button>
             </div>
         </div>
     </p-dialog>
 </div>
 
 <!-- ================= EXPANDED TABLE VIEW ================= -->
-<div *ngIf="isTableExpanded" class="fixed bg-white z-40 p-6 overflow-hidden"
-    [ngStyle]="{'top': '64px', 'left': '256px', 'right': '0', 'bottom': '0'}">
+<div *ngIf="isTableExpanded" class="fixed bg-white z-40 p-6 overflow-hidden" [ngStyle]="{'top': '64px', 'left': '256px', 'right': '0', 'bottom': '0'}">
     <!-- BACK BUTTON -->
     <div class="mb-4">
-        <button pButton icon="pi pi-arrow-left" class="p-button-text !text-gray-600"
-            (click)="toggleTableExpansion()" pTooltip="Back to dashboard"></button>
+        <button pButton icon="pi pi-arrow-left" class="p-button-text !text-gray-600" (click)="toggleTableExpansion()" pTooltip="Back to dashboard"></button>
     </div>
 
     <!-- ================= TABULATOR TABLE IN EXPANDED MODE ================= -->
-    <app-tabulator-table
-        [config]="tabulatorConfig"
-        [initialData]="tableData"
-        (dataChanged)="onTableDataChanged($event)"
-        (dataLoaded)="onTableDataLoaded($event)"
-        (rowSelected)="onTableRowSelected($event)"
-    ></app-tabulator-table>
+    <app-tabulator-table [config]="tabulatorConfig" [initialData]="tableData" (dataChanged)="onTableDataChanged($event)" (dataLoaded)="onTableDataLoaded($event)" (rowSelected)="onTableRowSelected($event)"></app-tabulator-table>
 </div>

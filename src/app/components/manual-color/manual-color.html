@@ -1,75 +1,41 @@
 <div class="p-6 space-y-4">
+    <!-- TOAST NOTIFICATIONS -->
+    <p-toast position="top-right"></p-toast>
 
-  <!-- TOAST NOTIFICATIONS -->
-  <p-toast position="top-right"></p-toast>
-
-  <!-- Top Toolbar -->
-  <div class="flex flex-wrap items-center justify-between gap-3">
-    <div class="flex flex-wrap items-center gap-2">
-      <input
-        type="text"
-        pInputText
-        [(ngModel)]="searchText"
-        placeholder="Search Message ID"
-        class="p-inputtext-sm w-64"
-      />
-      <button pButton label="Add New" icon="pi pi-plus" class="p-button-sm p-button-outlined"
-        (click)="addNewRow()"></button>
-      <button pButton label="Run Rules" icon="pi pi-cog" class="p-button-sm p-button-outlined"></button>
-      <button pButton label="Filters" icon="pi pi-filter" class="p-button-sm p-button-outlined"></button>
-      <button pButton label="Import via Excel" icon="pi pi-upload" class="p-button-sm p-button-outlined"
-        (click)="openImportDialog()"></button>
+    <!-- Top Toolbar -->
+    <div class="bg-white rounded-2xl p-5 mb-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Search input with icon -->
+                <div class="relative !rounded-2xl">
+                    <input type="text" pInputText [(ngModel)]="searchText" placeholder="Search Message ID" class="p-inputtext-sm w-64 bg-gray-100 border border-gray-200 pl-10 focus:ring-2 focus:ring-gray-300" />
+                    <i class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <!-- Buttons without borders, gray background, increased roundness -->
+                <button pButton label="Add New" icon="pi pi-plus-circle" class="p-button-sm !bg-gray-100 !rounded-2xl hover:bg-gray-100 !px-5 !py-3 !text-black !border-none"></button>
+                <button pButton label="Run Rules" icon="pi pi-cog" class="p-button-sm !bg-gray-100 !rounded-2xl hover:bg-gray-100 !px-5 !py-3 !text-black !border-none"></button>
+                <button pButton label="Filters" icon="pi pi-filter" class="p-button-sm !bg-gray-100 !rounded-2xl hover:bg-gray-100 !px-5 !py-3 !text-black !border-none"></button>
+                <button pButton label="Import via Excel" icon="pi pi-upload" class="p-button-sm !bg-gray-100 !rounded-2xl hover:bg-gray-100 !px-5 !py-3 !text-black !border-none" (click)="openImportDialog()"></button>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-sm text-gray-600">Total Count: <strong>{{ colors.length }}</strong></div>
+                <button pButton label="Run Automation" icon="pi pi-play" class="p-button-sm bg-black hover:bg-gray-800 text-white border-0 rounded-lg px-4 py-2" (click)="runAutomation()"></button>
+            </div>
+        </div>
     </div>
 
-    <div class="flex items-center gap-3">
-      <div class="text-sm text-gray-600">Total Count: <strong>{{ colors.length }}</strong></div>
-      <button
-        pButton
-        label="Run Automation"
-        icon="pi pi-play"
-        class="p-button-sm p-button-rounded"
-        style="background-color:white;color:#0b0b14;border-color:#d1d5db"
-        (click)="runAutomation()"
-      ></button>
-    </div>
-  </div>
+    <!-- TABULATOR TABLE - EDITABLE -->
+    <app-tabulator-table [config]="tabulatorConfig" [initialData]="colors" (dataChanged)="onTableDataChanged($event)" (dataLoaded)="onTableDataLoaded($event)" (rowSelected)="onTableRowSelected($event)"></app-tabulator-table>
 
-  <!-- TABULATOR TABLE - EDITABLE -->
-  <app-tabulator-table
-    [config]="tabulatorConfig"
-    [initialData]="colors"
-    (dataChanged)="onTableDataChanged($event)"
-    (dataLoaded)="onTableDataLoaded($event)"
-    (rowSelected)="onTableRowSelected($event)"
-  ></app-tabulator-table>
+    <!-- File Import Dialog -->
+    <p-dialog header="Import Color File" [(visible)]="showImportDialog" [modal]="true" [ngStyle]="{'width': '400px'}" [closable]="false">
+        <div class="flex flex-col items-center justify-center text-center space-y-4 py-6">
+            <i class="pi pi-upload text-4xl text-gray-400"></i>
+            <p class="text-gray-600 text-sm">Drop your CSV or Excel file here to import color data.</p>
 
-  <!-- File Import Dialog -->
-  <p-dialog
-    header="Import Color File"
-    [(visible)]="showImportDialog"
-    [modal]="true"
-    [ngStyle]="{'width': '400px'}"
-    [closable]="false"
-  >
-    <div class="flex flex-col items-center justify-center text-center space-y-4 py-6">
-      <i class="pi pi-upload text-4xl text-gray-400"></i>
-      <p class="text-gray-600 text-sm">Drop your CSV or Excel file here to import color data.</p>
+            <p-fileUpload mode="basic" name="colorFile" accept=".csv,.xlsx" chooseLabel="Select File" (onSelect)="onUpload($event)"></p-fileUpload>
 
-      <p-fileUpload
-        mode="basic"
-        name="colorFile"
-        accept=".csv,.xlsx"
-        chooseLabel="Select File"
-        (onSelect)="onUpload($event)"
-      ></p-fileUpload>
-
-      <button
-        pButton
-        label="Cancel"
-        class="p-button-outlined p-button-sm"
-        (click)="onCancelUpload()"
-      ></button>
-    </div>
-  </p-dialog>
-
+            <button pButton label="Cancel" class="p-button-outlined p-button-sm" (click)="onCancelUpload()"></button>
+        </div>
+    </p-dialog>
 </div>
