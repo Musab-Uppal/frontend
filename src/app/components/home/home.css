@@ -44,3 +44,31 @@
     overflow-x: auto;
     overflow-y: hidden;
 }
+
+.stacked-chart-container {
+    width: 1200px; /* Set a fixed width larger than the parent to enable horizontal scrolling */
+}
+
+/* Scroll container */
+.stacked-chart-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+}
+
+/* Smooth, subtle scrollbar */
+.stacked-chart-scroll::-webkit-scrollbar {
+    height: 6px;
+}
+
+.stacked-chart-scroll::-webkit-scrollbar-thumb {
+    background-color: #e5e7eb;
+    border-radius: 6px;
+}
+
+/* Optional fade hint (left/right) */
+.stacked-chart-scroll {
+    background: linear-gradient(to right, #f3f4f6 30%, transparent), linear-gradient(to left, #f3f4f6 30%, transparent);
+    background-attachment: local, local;
+}
