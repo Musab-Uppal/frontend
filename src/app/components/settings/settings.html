@@ -39,7 +39,8 @@
                         <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                             <td class="px-4 py-3 text-sm text-gray-900">Remove DZ bank securities</td>
                             <td class="px-4 py-3">
-                                <p-autoComplete [(ngModel)]="selectedActive1" [suggestions]="filteredActiveOptions" (completeMethod)="filterActive($event)" field="label" [dropdown]="true" placeholder="Select" styleClass="w-24"> </p-autoComplete>
+                                <p-autoComplete [(ngModel)]="selectedActive1" [suggestions]="filteredActiveOptions" (completeMethod)="filterActive($event)" field="label" [dropdown]="true" placeholder="Select" styleClass="w-24" appendTo="body">
+                                </p-autoComplete>
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex gap-2">
@@ -55,7 +56,8 @@
                         <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                             <td class="px-4 py-3 text-sm text-gray-900">Remove Performance Trust Offer</td>
                             <td class="px-4 py-3">
-                                <p-autoComplete [(ngModel)]="selectedActive2" [suggestions]="filteredActiveOptions" (completeMethod)="filterActive($event)" field="label" [dropdown]="true" placeholder="Select" styleClass="w-24"> </p-autoComplete>
+                                <p-autoComplete [(ngModel)]="selectedActive1" [suggestions]="filteredActiveOptions" (completeMethod)="filterActive($event)" field="label" [dropdown]="true" placeholder="Select" styleClass="w-24" appendTo="body">
+                                </p-autoComplete>
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex gap-2">
@@ -228,11 +230,20 @@
             <h2 class="text-lg font-semibold text-gray-900 mb-2">Manual Colors</h2>
             <p class="text-sm text-gray-600 mb-4">The colors will be processed in the next automation cycle</p>
 
-            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-4 hover:border-gray-400 transition-colors cursor-pointer">
-                <div class="flex flex-col items-center">
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center mb-4 hover:border-gray-400 transition-colors cursor-pointer" (click)="fileInput.click()">
+                <!-- Hidden file input -->
+                <input #fileInput type="file" accept=".xlsx,.xls" hidden (change)="onFileSelected($event)" />
+
+                <div class="flex flex-col items-center pointer-events-none">
                     <i class="pi pi-download text-3xl text-gray-400 mb-3"></i>
+
                     <p class="text-sm font-medium text-gray-700 mb-1">Import Colors</p>
-                    <p class="text-xs text-gray-500">Manual colors bulk upload via excel. <a href="#" class="text-blue-600 underline hover:text-blue-700">Click here</a> to download sample file</p>
+
+                    <p class="text-sm text-gray-500 leading-relaxed max-w-md">
+                        Manual colors bulk upload via excel,
+                        <a href="assets/sample-files/color-import-sample.xlsx" download class="!underline font-bold underline-offset-4 decoration-gray-300 hover:text-gray-700 pointer-events-auto" (click)="$event.stopPropagation()"> Click here </a>
+                        to download sample file
+                    </p>
                 </div>
             </div>
 
@@ -266,7 +277,7 @@
                             <p class="text-sm text-gray-900">Change saved by Udit Sharma</p>
                             <p class="text-xs text-gray-500">Nov 22, 2025</p>
                         </div>
-                        <button class="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors" title="Revert this change">
+                        <button (click)="revertLog(restoreEmailLogs[1])" class="text-sm rounded-2xl p-2 !bg-gray-200 text-black hover:text-cyan-500 flex items-center gap-1 transition-colors" title="Revert this change">
                             <i class="pi pi-undo text-xs"></i>
                             Revert
                         </button>
@@ -331,8 +342,8 @@
                             </button>
                         </div>
                     </div>
-                    <div class="col-span-12 md:col-span-2 flex items-end gap-2">
-                        <div class="flex-1">
+                    <div class="col-span-12 md:col-span-2 grid grid-cols-[1fr_auto] items-end gap-2">
+                        <div class="flex-1 min-w-[90px]">
                             <label class="text-xs text-gray-600 mb-1 block">Repeat</label>
                             <div class="relative">
                                 <select [(ngModel)]="newJobRepeat" class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
@@ -341,18 +352,18 @@
                                 </select>
                                 <i class="pi pi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
                             </div>
+                            <button
+                                (click)="addJob()"
+                                [disabled]="!newJobName"
+                                [class.opacity-50]="!newJobName"
+                                [class.cursor-not-allowed]="!newJobName"
+                                class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 flex items-center gap-1.5 transition-all whitespace-nowrap"
+                                title="Add new job"
+                            >
+                                <i class="pi pi-plus-circle text-base"></i>
+                                Add
+                            </button>
                         </div>
-                        <button
-                            (click)="addJob()"
-                            [disabled]="!newJobName"
-                            [class.opacity-50]="!newJobName"
-                            [class.cursor-not-allowed]="!newJobName"
-                            class="px-3 py-2 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 flex items-center gap-1.5 transition-all whitespace-nowrap"
-                            title="Add new job"
-                        >
-                            <i class="pi pi-plus-circle text-base"></i>
-                            Add
-                        </button>
                     </div>
                 </div>
             </div>
@@ -598,7 +609,7 @@
                             <p class="text-sm text-gray-900">Removed data by LUIS Sharma</p>
                             <p class="text-xs text-gray-500">Nov. 22, 2005</p>
                         </div>
-                        <button (click)="revertLog(restoreEmailLogs[1])" class="text-sm rounded-2xl p-2 bg-gray-100 text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors" title="Revert this change">
+                        <button (click)="revertLog(restoreEmailLogs[1])" class="text-sm rounded-2xl p-2 bg-gray-200 text-black hover:text-cyan-500 flex items-center gap-1 transition-colors" title="Revert this change">
                             <i class="pi pi-undo text-xs"></i>
                             Revert
                         </button>
