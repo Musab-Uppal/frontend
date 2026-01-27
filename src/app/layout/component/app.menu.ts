@@ -59,7 +59,7 @@ export class AppMenu {
             label: 'Cron Jobs', 
             icon: 'pi pi-fw pi-clock', 
             routerLink: ['/settings'], 
-            queryParams: { section: 'corn-jobs' }
+            queryParams: { section: 'cron-jobs' }
           },
           { 
             label: 'Email & Restore', 

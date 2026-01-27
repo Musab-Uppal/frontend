@@ -47,15 +47,61 @@
 }
 
 /* ================================
+   SELECT BUTTON STYLING
+   ================================ */
+
+:host ::ng-deep .select-row-btn {
+    background-color: #ffffff;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+:host ::ng-deep .select-row-btn:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+:host ::ng-deep .select-row-btn:active {
+    background-color: #e5e7eb;
+}
+
+/* Selected row button state */
+:host ::ng-deep .tabulator-row.tabulator-selected .select-row-btn {
+    background-color: #1f2937;
+    color: #ffffff;
+    border-color: #1f2937;
+}
+
+:host ::ng-deep .tabulator-row.tabulator-selected .select-row-btn:hover {
+    background-color: #111827;
+    border-color: #111827;
+}
+
+/* ================================
    ROWS & CELLS
    ================================ */
 
 :host ::ng-deep .tabulator-row {
     background-color: #ffffff;
+    transition: background-color 0.15s ease;
 }
 
 :host ::ng-deep .tabulator-row:hover {
     background-color: #f9fafb;
+}
+
+:host ::ng-deep .tabulator-row.tabulator-selected {
+    background-color: #eff6ff !important;
+}
+
+:host ::ng-deep .tabulator-row.tabulator-selected:hover {
+    background-color: #dbeafe !important;
 }
 
 :host ::ng-deep .tabulator-cell {
@@ -89,23 +135,23 @@
     z-index: 2;
 }
 
+:host ::ng-deep .tabulator-row.tabulator-selected .tabulator-frozen {
+    background-color: #eff6ff !important;
+}
+
 /* ================================
    ROW NUMBER COLUMN
    ================================ */
 
 :host ::ng-deep .tabulator-row-number {
-    text-align: right;
-    color: #ffffff;
+    text-align: center;
+    color: #6b7280;
     font-variant-numeric: tabular-nums;
 }
 
 /* ================================
    SELECTION / ACTIVE STATES
    ================================ */
-
-:host ::ng-deep .tabulator-row.tabulator-selected {
-    background-color: #ffffff;
-}
 
 :host ::ng-deep .tabulator-cell:focus {
     outline: none;
@@ -167,10 +213,18 @@
 }
 
 :host ::ng-deep .tabulator-tableholder::-webkit-scrollbar-thumb {
-    background: #ffffff !important;
+    background: #d1d5db !important;
     border-radius: 4px;
 }
 
 :host ::ng-deep .tabulator-tableholder::-webkit-scrollbar-track {
     background: transparent;
+}
+
+/* ================================
+   EXPANDED MODE ADJUSTMENTS
+   ================================ */
+
+:host-context(.table-expanded) ::ng-deep .tabulator {
+    height: calc(100vh - 120px) !important;
 }

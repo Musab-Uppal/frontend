@@ -54,10 +54,13 @@ export class TabulatorTableComponent implements OnInit {
     @Output() dataChanged = new EventEmitter<any[]>();
     @Output() rowSelected = new EventEmitter<any[]>();
     @Output() dataLoaded = new EventEmitter<any[]>();
+    @Output() expandToggled = new EventEmitter<boolean>();
 
     table: any;
     tableData: any[] = [];
+    selectedRows: any[] = [];
     isLoading: boolean = false;
+    isExpanded: boolean = false;
     s3BucketName: string = '';
     s3FileName: string = '';
 
@@ -107,7 +110,7 @@ export class TabulatorTableComponent implements OnInit {
             // Features
             movableColumns: this.config.movableColumns,
             movableRows: this.config.editable,
-            selectable: this.config.selectable ? 1 : false,
+            selectable: this.config.selectable ? 'highlight' : false,
 
             clipboard: true,
             clipboardCopyStyled: false,
@@ -115,7 +118,7 @@ export class TabulatorTableComponent implements OnInit {
             history: this.config.editable,
 
             // Height
-            height: '600px',
+            height: this.isExpanded ? 'calc(100vh - 120px)' : '600px',
 
             // Virtual rendering for performance
             renderVertical: 'virtual',
@@ -142,17 +145,37 @@ export class TabulatorTableComponent implements OnInit {
         if (this.config.selectable) {
             this.table.on('rowSelectionChanged', (data: any, rows: any) => {
                 const selectedData = rows.map((row: any) => row.getData());
+                this.selectedRows = selectedData;
                 this.rowSelected.emit(selectedData);
+                console.log('📊 Selected rows:', selectedData.length);
             });
         }
 
         console.log('✅ Tabulator initialized');
     }
+    
     /**
      * Get default columns for the table
      */
     private getDefaultColumns() {
         return [
+            {
+                title: '',
+                field: 'select',
+                width: 80,
+                editor: false,
+                headerSort: false,
+                frozen: true,
+                hozAlign: 'center',
+                headerFilter: false,
+                formatter: (cell: any) => {
+                    return '<button class="select-row-btn">Select</button>';
+                },
+                cellClick: (e: any, cell: any) => {
+                    const row = cell.getRow();
+                    row.toggleSelect();
+                }
+            },
             {
                 title: '#',
                 field: 'rowNumber',
@@ -161,13 +184,13 @@ export class TabulatorTableComponent implements OnInit {
                 headerSort: false,
                 frozen: true,
                 hozAlign: 'center',
-                headerFilter: false // No filter for row numbers
+                headerFilter: false
             },
             {
                 title: 'Message ID',
                 field: 'messageId',
                 width: 180,
-                headerFilter: false // Disable filters to show clean headers
+                headerFilter: false
             },
             {
                 title: 'Ticker ID',
@@ -225,6 +248,22 @@ export class TabulatorTableComponent implements OnInit {
     }
 
     /**
+     * Toggle expand/collapse table
+     */
+    toggleExpand() {
+        this.isExpanded = !this.isExpanded;
+        this.expandToggled.emit(this.isExpanded);
+        
+        // Update table height
+        if (this.table) {
+            const newHeight = this.isExpanded ? 'calc(100vh - 120px)' : '600px';
+            this.table.setHeight(newHeight);
+        }
+        
+        console.log('🔄 Table expansion toggled:', this.isExpanded);
+    }
+
+    /**
      * Handle Excel file upload
      */
     onExcelFileSelected(event: any) {
@@ -246,7 +285,6 @@ export class TabulatorTableComponent implements OnInit {
                         summary: 'Success',
                         detail: `Loaded ${tableData.data.length} rows from Excel`
                     });
-                    // Reset file input
                     event.target.value = '';
                 },
                 (error) => {
@@ -322,11 +360,12 @@ export class TabulatorTableComponent implements OnInit {
     }
 
     /**
-     * Export to CSV
+     * Export to CSV (selected rows if any, otherwise all)
      */
     exportToCSV() {
-        const data = this.table.getData();
-        if (data.length === 0) {
+        const dataToExport = this.selectedRows.length > 0 ? this.selectedRows : this.table.getData();
+        
+        if (dataToExport.length === 0) {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Warning',
@@ -334,20 +373,24 @@ export class TabulatorTableComponent implements OnInit {
             });
             return;
         }
-        this.tabulatorService.exportToCSV(data, 'table-data');
+        
+        const fileName = this.selectedRows.length > 0 ? 'selected-rows' : 'table-data';
+        this.tabulatorService.exportToCSV(dataToExport, fileName);
+        
         this.messageService.add({
             severity: 'success',
             summary: 'Success',
-            detail: 'Data exported to CSV'
+            detail: `Exported ${dataToExport.length} row(s) to CSV`
         });
     }
 
     /**
-     * Export to Excel
+     * Export to Excel (selected rows if any, otherwise all)
      */
     exportToExcel() {
-        const data = this.table.getData();
-        if (data.length === 0) {
+        const dataToExport = this.selectedRows.length > 0 ? this.selectedRows : this.table.getData();
+        
+        if (dataToExport.length === 0) {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Warning',
@@ -355,11 +398,14 @@ export class TabulatorTableComponent implements OnInit {
             });
             return;
         }
-        this.tabulatorService.exportToExcel(data, 'table-data');
+        
+        const fileName = this.selectedRows.length > 0 ? 'selected-rows' : 'table-data';
+        this.tabulatorService.exportToExcel(dataToExport, fileName);
+        
         this.messageService.add({
             severity: 'success',
             summary: 'Success',
-            detail: 'Data exported to Excel'
+            detail: `Exported ${dataToExport.length} row(s) to Excel`
         });
     }
 
@@ -369,10 +415,24 @@ export class TabulatorTableComponent implements OnInit {
     clearData() {
         this.table.clearData();
         this.tableData = [];
+        this.selectedRows = [];
         this.messageService.add({
             severity: 'info',
             summary: 'Info',
             detail: 'Table cleared'
+        });
+    }
+
+    /**
+     * Clear selection
+     */
+    clearSelection() {
+        this.table.deselectRow();
+        this.selectedRows = [];
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Info',
+            detail: 'Selection cleared'
         });
     }
 
@@ -431,6 +491,7 @@ export class TabulatorTableComponent implements OnInit {
             const selectedRows = this.table.getSelectedRows();
             selectedRows.forEach((row: any) => row.delete());
             this.tableData = this.table.getData();
+            this.selectedRows = [];
             this.dataChanged.emit(this.tableData);
             this.messageService.add({
                 severity: 'info',
@@ -438,5 +499,14 @@ export class TabulatorTableComponent implements OnInit {
                 detail: 'Selected rows deleted'
             });
         }
+    }
+
+    /**
+     * Get export button label
+     */
+    getExportLabel(): string {
+        return this.selectedRows.length > 0 
+            ? `Export Selected (${this.selectedRows.length})` 
+            : 'Export All';
     }
 }

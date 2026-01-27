@@ -1,6 +1,6 @@
-<div class="min-h-screen" *ngIf="!isTableExpanded">
+<div class="min-h-screen" [class.table-expanded]="isTableExpanded">
     <!-- MAIN WRAPPER -->
-    <div class="max-w-[1800px] ml-0 mr-auto pl-2 pr-4 py-4 space-y-6">
+    <div class="max-w-[1800px] ml-0 mr-auto pl-2 pr-4 py-4 space-y-6" *ngIf="!isTableExpanded">
         <div>
             <!-- ================= TOP GRID ================= -->
             <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
@@ -62,13 +62,13 @@
                         <!-- Bottom actions card -->
                         <div class="px-1 flex-1">
                             <div class="bg-white rounded-[18px] overflow-hidden shadow-sm">
-                                <button pButton icon="pi pi-upload" label="Import Sample" class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
+                                <button pButton icon="pi pi-upload" label="Import Sample" (click)="importSample()" class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
 
-                                <button pButton icon="pi pi-sliders-h" label="Rules & Presets" class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
+                                <button pButton icon="pi pi-sliders-h" label="Rules & Presets" (click)="rulesAndPresets()" class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
 
-                                <button pButton icon="pi pi-history" label="Restore last run" class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
+                                <button pButton icon="pi pi-history" label="Restore last run" (click)="restoreLastRun()" class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
 
-                                <button pButton icon="pi pi-clock" label="Cron Jobs & Time" class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
+                                <button pButton icon="pi pi-clock" label="Cron Jobs & Time" (click)="cronJobsAndTime()" class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
                             </div>
                         </div>
                     </div>
@@ -98,8 +98,8 @@
 
                 <!-- Export / Count / Fetch -->
                 <div class="flex items-center gap-3 flex-wrap">
-                    <!-- Export -->
-                    <button pButton icon="pi pi-download" label="Export All" (click)="exportAll()" class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"></button>
+                    <!-- Export - Dynamic label -->
+                    <button pButton icon="pi pi-download" [label]="getExportButtonLabel()" (click)="exportAll()" class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"></button>
 
                     <!-- Total Count -->
                     <div class="flex items-center gap-3 px-5 py-2.5 rounded-full border border-gray-300 bg-gray-50 text-gray-700 font-medium">
@@ -129,7 +129,7 @@
                     </button>
                 </div>
 
-                <button class="flex items-center gap-2 !rounded-full !px-5 !py-2.5 !bg-white !text-gray-700 !border !border-gray-300 hover:!bg-gray-50">
+                <button class="flex items-center gap-2 !rounded-full !px-5 !py-2.5 !bg-white !text-gray-700 !border !border-gray-300 hover:!bg-gray-50" (click)="removeAllFilters()">
                     <i class="pi pi-trash text-sm"></i>
                     Remove all filters
                 </button>
@@ -142,67 +142,50 @@
         </div>
 
         <!-- ================= TABULATOR TABLE ================= -->
-        <app-tabulator-table [config]="tabulatorConfig" [initialData]="tableData" (dataChanged)="onTableDataChanged($event)" (dataLoaded)="onTableDataLoaded($event)" (rowSelected)="onTableRowSelected($event)"></app-tabulator-table>
+        <app-tabulator-table 
+            [config]="tabulatorConfig" 
+            [initialData]="tableData" 
+            (dataChanged)="onTableDataChanged($event)" 
+            (dataLoaded)="onTableDataLoaded($event)" 
+            (rowSelected)="onTableRowSelected($event)"
+            (expandToggled)="onTableExpandToggled($event)"
+        ></app-tabulator-table>
+    </div>
 
-        <!-- ================= LEGACY PRIMENG TABLE (HIDDEN) ================= -->
-        <p-card class="!shadow-sm !rounded-2xl !border-gray-200" [ngStyle]="{'display': 'none'}">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-900">Data Table (Legacy)</h3>
-                <button
-                    pButton
-                    [icon]="isTableExpanded ? 'pi pi-compress' : 'pi pi-expand'"
-                    class="p-button-text p-button-plain !text-gray-500 hover:!text-gray-700"
+    <!-- ================= EXPANDED TABLE VIEW ================= -->
+    <div *ngIf="isTableExpanded" class="fixed inset-0 bg-white z-40 flex flex-col" [ngStyle]="{'padding-top': '64px', 'padding-left': '0px'}">
+        <!-- BACK BUTTON & HEADER -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
+            <div class="flex items-center gap-4">
+                <button 
+                    pButton 
+                    icon="pi pi-arrow-left" 
+                    label="Back to Dashboard"
+                    class="!bg-gray-900 !text-white !rounded-full !px-5 !py-2.5 hover:!bg-black" 
                     (click)="toggleTableExpansion()"
-                    [pTooltip]="isTableExpanded ? 'Minimize Table' : 'Expand Table'"
                 ></button>
+                
+                <h2 class="text-lg font-semibold text-gray-900">Market Pulse Data - Full Screen View</h2>
             </div>
-            <p-table [value]="tableData" [scrollable]="true" scrollHeight="500px">
-                <ng-template pTemplate="header">
-                    <tr class="bg-gray-50 text-xs font-semibold text-gray-600">
-                        <th class="w-12">#</th>
-                        <th>Message ID</th>
-                        <th>Ticker</th>
-                        <th>CUSIP</th>
-                        <th>Bias</th>
-                        <th>Date</th>
-                        <th>BID</th>
-                        <th>MID</th>
-                        <th>ASK</th>
-                        <th>Source</th>
-                    </tr>
-                </ng-template>
 
-                <ng-template pTemplate="body" let-row let-i="rowIndex">
-                    <tr class="hover:bg-gray-50 transition text-sm">
-                        <td class="text-gray-500">{{ i + 1 }}</td>
-                        <td class="font-mono">{{ row.messageId }}</td>
-                        <td>{{ row.ticker }}</td>
-                        <td class="font-mono">{{ row.cusip }}</td>
+            <!-- Selection Info in Expanded View -->
+            <div *ngIf="selectedRows.length > 0" class="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full">
+                <i class="pi pi-check-circle text-blue-600"></i>
+                <span class="text-sm font-medium text-blue-700">{{ selectedRows.length }} row(s) selected</span>
+            </div>
+        </div>
 
-                        <td>
-                            <span
-                                class="px-3 py-1 rounded-full text-xs font-medium"
-                                [class]="row.bias === 'BWIC_COVER' 
-                  ? 'bg-purple-100 text-purple-700' 
-                  : 'bg-blue-100 text-blue-700'"
-                            >
-                                {{ row.bias }}
-                            </span>
-                        </td>
-
-                        <td>{{ row.date }}</td>
-
-                        <td class="text-green-600 font-medium">{{ row.bid }}</td>
-                        <td>{{ row.mid }}</td>
-                        <td class="text-red-600 font-medium">{{ row.ask }}</td>
-
-                        <td>
-                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded"> {{ row.source }} </span>
-                        </td>
-                    </tr>
-                </ng-template>
-            </p-table>
-        </p-card>
+        <!-- TABLE IN EXPANDED MODE -->
+        <div class="flex-1 overflow-auto px-6 py-4">
+            <app-tabulator-table 
+                [config]="tabulatorConfig" 
+                [initialData]="tableData" 
+                (dataChanged)="onTableDataChanged($event)" 
+                (dataLoaded)="onTableDataLoaded($event)" 
+                (rowSelected)="onTableRowSelected($event)"
+                (expandToggled)="onTableExpandToggled($event)"
+            ></app-tabulator-table>
+        </div>
     </div>
 
     <!-- ================= FILTER MODAL ================= -->
@@ -336,15 +319,4 @@
             </div>
         </div>
     </p-dialog>
-</div>
-
-<!-- ================= EXPANDED TABLE VIEW ================= -->
-<div *ngIf="isTableExpanded" class="fixed bg-white z-40 p-6 overflow-hidden" [ngStyle]="{'top': '64px', 'left': '256px', 'right': '0', 'bottom': '0'}">
-    <!-- BACK BUTTON -->
-    <div class="mb-4">
-        <button pButton icon="pi pi-arrow-left" class="p-button-text !text-gray-600" (click)="toggleTableExpansion()" pTooltip="Back to dashboard"></button>
-    </div>
-
-    <!-- ================= TABULATOR TABLE IN EXPANDED MODE ================= -->
-    <app-tabulator-table [config]="tabulatorConfig" [initialData]="tableData" (dataChanged)="onTableDataChanged($event)" (dataLoaded)="onTableDataLoaded($event)" (rowSelected)="onTableRowSelected($event)"></app-tabulator-table>
 </div>

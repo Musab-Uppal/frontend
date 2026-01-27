@@ -51,6 +51,7 @@ export class Home implements OnInit {
 
     // Table data - will be loaded from backend
     tableData: any[] = [];
+    selectedRows: any[] = [];
 
     // Tabulator configuration
     tabulatorConfig: TableConfig = {
@@ -63,7 +64,7 @@ export class Home implements OnInit {
         paginationSize: 20,
         selectable: true,
         movableColumns: true,
-        headerFilter: true
+        headerFilter: false
     };
 
     constructor(
@@ -108,7 +109,7 @@ export class Home implements OnInit {
                     const price = color.price || 0;
                     return {
                         messageId: color.message_id,
-                        ticker: color.ticker,
+                        tickerId: color.ticker,
                         cusip: color.cusip,
                         bias: this.formatBias(color.bias),
                         date: this.formatDate(color.date),
@@ -362,6 +363,13 @@ export class Home implements OnInit {
 
     onTableRowSelected(selectedRows: any[]) {
         console.log('✅ Tabulator rows selected:', selectedRows.length);
+        this.selectedRows = selectedRows;
+    }
+
+    onTableExpandToggled(isExpanded: boolean) {
+        console.log('🔄 Table expand toggled:', isExpanded);
+        this.isTableExpanded = isExpanded;
+        this.tableStateService.setTableExpanded(isExpanded);
     }
 
     // ==================== TABLE ACTIONS ====================
@@ -378,13 +386,17 @@ export class Home implements OnInit {
     }
 
     exportAll() {
-        console.log('📤 Exporting all data...');
-        const csvContent = this.convertToCSV(this.tableData);
+        console.log('📤 Exporting data...');
+        const dataToExport = this.selectedRows.length > 0 ? this.selectedRows : this.tableData;
+        const csvContent = this.convertToCSV(dataToExport);
         const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `marketpulse_colors_${new Date().toISOString().split('T')[0]}.csv`;
+        const fileName = this.selectedRows.length > 0 
+            ? `marketpulse_selected_rows_${new Date().toISOString().split('T')[0]}.csv`
+            : `marketpulse_colors_${new Date().toISOString().split('T')[0]}.csv`;
+        link.download = fileName;
         link.click();
         window.URL.revokeObjectURL(url);
         console.log('✅ Export completed');
@@ -439,5 +451,11 @@ export class Home implements OnInit {
     cronJobsAndTime() {
         console.log('⏰ Cron Jobs & Time clicked');
         window.location.href = '/settings?section=corn-jobs';
+    }
+
+    getExportButtonLabel(): string {
+        return this.selectedRows.length > 0 
+            ? `Export Selected (${this.selectedRows.length})` 
+            : 'Export All';
     }
 }

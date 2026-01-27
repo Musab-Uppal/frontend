@@ -3,7 +3,65 @@
     <p-toast position="top-right"></p-toast>
 
     <!-- Top Toolbar -->
-    <div class="flex flex-wrap items-center justify-between gap-3"></div>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+        <!-- Left Side Actions -->
+        <div class="flex flex-wrap items-center gap-3">
+            <!-- Expand/Collapse Button -->
+            <button 
+                pButton 
+                [icon]="isExpanded ? 'pi pi-compress' : 'pi pi-window-maximize'"
+                [label]="isExpanded ? 'Minimize' : 'Expand Table'"
+                class="!rounded-full !px-5 !py-2.5 !bg-gray-900 !text-white hover:!bg-black"
+                (click)="toggleExpand()"
+                [pTooltip]="isExpanded ? 'Return to normal view' : 'Expand table to full screen'"
+            ></button>
+
+            <!-- Selection Info -->
+            <div *ngIf="selectedRows.length > 0" class="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full">
+                <i class="pi pi-check-circle text-blue-600"></i>
+                <span class="text-sm font-medium text-blue-700">{{ selectedRows.length }} row(s) selected</span>
+                <button 
+                    pButton 
+                    icon="pi pi-times" 
+                    class="p-button-text p-button-sm !text-blue-600 hover:!text-blue-800"
+                    (click)="clearSelection()"
+                    pTooltip="Clear selection"
+                ></button>
+            </div>
+        </div>
+
+        <!-- Right Side Actions -->
+        <div class="flex flex-wrap items-center gap-3">
+            <!-- Export Dropdown -->
+            <button 
+                pButton 
+                [icon]="selectedRows.length > 0 ? 'pi pi-download' : 'pi pi-download'"
+                [label]="getExportLabel()"
+                class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"
+                (click)="exportToCSV()"
+            ></button>
+
+            <!-- Excel Export -->
+            <button 
+                *ngIf="selectedRows.length > 0"
+                pButton 
+                icon="pi pi-file-excel"
+                label="Export to Excel"
+                class="!rounded-full !px-5 !py-2.5 !bg-green-50 !text-green-700 !border !border-green-300 hover:!bg-green-100"
+                (click)="exportToExcel()"
+            ></button>
+
+            <!-- Clear Data (if editable) -->
+            <button 
+                *ngIf="config.editable"
+                pButton 
+                icon="pi pi-trash"
+                label="Clear All"
+                class="!rounded-full !px-5 !py-2.5 !bg-red-50 !text-red-700 !border !border-red-300 hover:!bg-red-100"
+                (click)="clearData()"
+            ></button>
+        </div>
+    </div>
 
     <!-- TABLE CONTAINER - Figma Style -->
     <div id="data-table" #tableContainer class="!rounded-2xl overflow-hidden border border-gray-200"></div>
