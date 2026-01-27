@@ -1,53 +1,55 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MenuItem } from 'primeng/api';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
-import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '../service/layout.service';
 import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
+import { filter, Subscription } from 'rxjs';
 
 @Component({
     selector: 'app-topbar',
     standalone: true,
     imports: [RouterModule, CommonModule, StyleClassModule, SelectModule, FormsModule],
-    template: ` <div class="layout-topbar">
+    template: `
+    <div class="layout-topbar">
         <div class="layout-topbar-logo-container">
             <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
                 <i class="pi pi-bars"></i>
             </button>
+
             <a class="layout-topbar-logo flex items-center gap-4" routerLink="/">
-    <img src="./assets/logo/logo2.png" alt="Logo" class="layout-topbar-logo-image">
+                <img src="./assets/logo/logo2.png" alt="Logo" class="layout-topbar-logo-image">
 
-    <!-- Brand -->
-    <div class="flex flex-col leading-tight">
-        <span class="font-bold whitespace-nowrap">
-            Market Pulse
-        </span>
-        <span class="text-xs text-gray-500 whitespace-nowrap">
-            Movement Intelligence
-        </span>
-    </div>
+                <!-- Brand -->
+                <div class="flex flex-col leading-tight">
+                    <span class="font-bold whitespace-nowrap">
+                        Market Pulse
+                    </span>
+                    <span class="text-xs text-gray-500 whitespace-nowrap">
+                        Movement Intelligence
+                    </span>
+                </div>
 
-    <!-- Page Title -->
-    <div class="hidden md:block h-6 w-px bg-gray-300"></div>
+                <div class="hidden md:block h-6 w-px bg-gray-300"></div>
+            </a>
 
-    </a>
-    <span class="hidden md:block text-base font-bold text-gray-950 whitespace-nowrap">
-        CLO Colors Data & Insights
-    </span>
-
-            
+            <!-- PAGE TITLE (HOME ONLY) -->
+            <span
+                *ngIf="isHomeRoute"
+                class="hidden md:block text-base font-bold text-gray-950 whitespace-nowrap">
+                CLO Colors Data & Insights
+            </span>
         </div>
 
         <div class="layout-topbar-actions">
-            <!-- Asset Selection Dropdown -->
-            <div class="asset-selection">
-               
-                <p-select 
-                    [options]="assetOptions" 
-                    [(ngModel)]="selectedAsset" 
+
+            <!-- ASSET SELECTION (HOME ONLY) -->
+            <div class="asset-selection" *ngIf="isHomeRoute">
+                <p-select
+                    [options]="assetOptions"
+                    [(ngModel)]="selectedAsset"
                     optionLabel="name"
                     class="asset-selector">
                 </p-select>
@@ -65,11 +67,10 @@ import { FormsModule } from '@angular/forms';
                     <div class="user-name">Shashank S.</div>
                     <div class="user-email">Shashank.Srivastava@spglobal.com</div>
                 </div>
-               
             </div>
-
         </div>
-    </div>`,
+    </div>
+    `,
     styles: [
         `
             .layout-topbar {
@@ -114,16 +115,10 @@ import { FormsModule } from '@angular/forms';
             .asset-selection {
                 display: flex;
                 align-items: center;
-                gap: 0.5rem;
-            }
-
-            .asset-icon {
-                color: var(--text-color-secondary);
-                font-size: 1rem;
             }
 
             .asset-selector {
-                min-width: 100px;
+                min-width: 120px;
             }
 
             .next-run {
@@ -135,14 +130,11 @@ import { FormsModule } from '@angular/forms';
             .next-run-label {
                 font-size: 0.75rem;
                 color: var(--text-color-secondary);
-                white-space: nowrap;
             }
 
             .next-run-timer {
                 font-size: 0.875rem;
                 font-weight: 600;
-                color: var(--text-color);
-                white-space: nowrap;
             }
 
             .user-info {
@@ -160,7 +152,6 @@ import { FormsModule } from '@angular/forms';
             .user-name {
                 font-size: 0.875rem;
                 font-weight: 600;
-                color: var(--text-color);
             }
 
             .user-email {
@@ -168,52 +159,21 @@ import { FormsModule } from '@angular/forms';
                 color: var(--text-color-secondary);
             }
 
-            .user-avatar {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 2rem;
-                height: 2rem;
-                background-color: var(--primary-color);
-                color: white;
-                border-radius: 50%;
-            }
-
             .layout-topbar-action {
-                display: flex;
-                align-items: center;
-                justify-content: center;
                 width: 2.5rem;
                 height: 2.5rem;
                 border-radius: 50%;
                 border: none;
                 background: transparent;
-                color: var(--text-color);
-                transition: all 0.2s;
                 cursor: pointer;
             }
 
-            .layout-topbar-action:hover {
-                background-color: var(--surface-hover);
-            }
-
-            /* Remove dropdown border and make it look like text */
             :host ::ng-deep .asset-selector .p-dropdown {
                 border: none !important;
                 background: transparent !important;
                 box-shadow: none !important;
             }
 
-            :host ::ng-deep .asset-selector .p-dropdown .p-dropdown-label {
-                padding: 0.25rem 0.5rem !important;
-                font-weight: 600;
-            }
-
-            :host ::ng-deep .asset-selector .p-dropdown-trigger {
-                color: var(--text-color-secondary) !important;
-            }
-
-            /* Responsive */
             @media (max-width: 768px) {
                 .asset-selection,
                 .next-run,
@@ -224,7 +184,7 @@ import { FormsModule } from '@angular/forms';
         `
     ]
 })
-export class AppTopbar {
+export class AppTopbar implements OnInit, OnDestroy {
     items!: MenuItem[];
     nextRunTimer = '7H:52M:25S';
 
@@ -235,5 +195,29 @@ export class AppTopbar {
 
     selectedAsset = this.assetOptions[0];
 
-    constructor(public layoutService: LayoutService) {}
+    isHomeRoute = false;
+    private routerSub!: Subscription;
+
+    constructor(
+        public layoutService: LayoutService,
+        private router: Router
+    ) {}
+
+    ngOnInit(): void {
+        // Handle initial load
+        this.updateHomeRoute(this.router.url);
+
+        // Handle navigation changes
+        this.routerSub = this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe((event: NavigationEnd) => {
+            this.updateHomeRoute(event.urlAfterRedirects);
+        });
+    }
+
+    private updateHomeRoute(url: string): void {
+        this.isHomeRoute = url === '/' || url.startsWith('/home');
+    }
+
+    ngOnDestroy(): void {
+        this.routerSub?.unsubscribe();
+    }
 }
