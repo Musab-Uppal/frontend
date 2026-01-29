@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, ElementRef, Input, Output, EventEmitter, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -31,7 +31,7 @@ export interface TableConfig {
     styleUrls: ['./tabulator-table.component.css'],
     providers: [MessageService]
 })
-export class TabulatorTableComponent implements OnInit {
+export class TabulatorTableComponent implements AfterViewInit {
     @ViewChild('tableContainer') tableContainer!: ElementRef;
 
     // Configuration inputs
@@ -63,6 +63,7 @@ export class TabulatorTableComponent implements OnInit {
     selectedRows: any[] = [];
     isLoading: boolean = false;
     isExpanded: boolean = false;
+    isInitialized: boolean = false; // Prevent duplicate initialization
     s3BucketName: string = '';
     s3FileName: string = '';
     
@@ -72,21 +73,63 @@ export class TabulatorTableComponent implements OnInit {
 
     constructor(
         private tabulatorService: TabulatorService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private cdr: ChangeDetectorRef
     ) {}
 
-    ngOnInit() {
-        console.log('🚀 Tabulator component initialized (Editable:', this.config.editable, ')');
-        this.initializeTable();
-        if (this.initialData && this.initialData.length > 0) {
-            this.loadTableData(this.initialData);
+    ngAfterViewInit() {
+        console.log('🚀 Tabulator component view initialized (Editable:', this.config.editable, ')');
+        
+        // Prevent duplicate initialization
+        if (this.isInitialized) {
+            console.log('⚠️ Already initialized, skipping');
+            return;
         }
+        
+        // Detect changes first to ensure DOM is updated
+        this.cdr.detectChanges();
+        
+        // Use multiple setTimeout approach for better reliability
+        setTimeout(() => {
+            const tableElement = document.getElementById('data-table');
+            
+            if (tableElement && tableElement.offsetParent !== null) {
+                // Element exists and is visible
+                this.initializeTable();
+                this.isInitialized = true;
+                
+                if (this.initialData && this.initialData.length > 0) {
+                    // Add another small delay before loading data
+                    setTimeout(() => {
+                        this.loadTableData(this.initialData);
+                    }, 100);
+                }
+            } else {
+                console.error('❌ Table element not ready or not visible');
+            }
+        }, 100);
     }
 
     /**
      * Initialize Tabulator table based on configuration
      */
     private initializeTable() {
+        // Check if DOM element exists and is visible
+        const tableElement = document.getElementById('data-table');
+        if (!tableElement) {
+            console.error('❌ Table element #data-table not found');
+            return;
+        }
+
+        // Check if element has dimensions (is rendered)
+        const rect = tableElement.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) {
+            console.error('❌ Table element has no dimensions');
+            return;
+        }
+
+        console.log('✅ Table element ready:', rect.width, 'x', rect.height);
+
         // Use custom columns if provided, otherwise use defaults
         const tableColumns = this.columns.length > 0 ? this.columns : this.getDefaultColumns();
 
@@ -131,7 +174,25 @@ export class TabulatorTableComponent implements OnInit {
             renderHorizontal: 'virtual'
         };
 
-        this.table = new Tabulator('#data-table', tableConfig);
+        try {
+            this.table = new Tabulator('#data-table', tableConfig);
+            console.log('✅ Tabulator initialized successfully');
+            
+            // Wait for table to be fully built before returning
+            this.table.on('tableBuilt', () => {
+                console.log('✅ Tabulator table built and ready');
+            });
+            
+        } catch (error) {
+            console.error('❌ Error initializing Tabulator:', error);
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to initialize table'
+            });
+            this.isInitialized = false; // Reset flag on error
+            return;
+        }
 
         // Event listeners
         if (this.config.editable) {
@@ -160,8 +221,6 @@ export class TabulatorTableComponent implements OnInit {
                 console.log('📊 Selected rows:', selectedData.length);
             });
         }
-
-        console.log('✅ Tabulator initialized');
     }
     
     /**
@@ -364,8 +423,13 @@ export class TabulatorTableComponent implements OnInit {
      * Load data into table with row numbers
      */
     private loadTableData(data: any[]) {
+        if (!this.table) {
+            console.warn('⚠️ Table not initialized yet, data will be loaded after initialization');
+            return;
+        }
+
         const dataWithRowNumbers = data.map((row, index) => ({
-            rowNumber: index + 1,
+            rowNumber: row.rowNumber || String(index + 1),
             ...row
         }));
 
