@@ -11,17 +11,25 @@ import { DialogModule } from 'primeng/dialog';
 import { AutoCompleteModule } from 'primeng/autocomplete';
 import { FormsModule } from '@angular/forms';
 import { TooltipModule } from 'primeng/tooltip';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 import { TabulatorTableComponent, TableConfig } from '../tabulator-table/tabulator-table.component';
 import { TableStateService } from '../home/table-state.service';
-import { ApiService } from '../../services/api.service';
+import { ApiService, ColorProcessed, ColorDisplay, MonthlyStats, OutputStats } from '../../services/api.service';
 import { StackedChartComponent } from '../stacked-chart/stacked-chart.component';
 
 @Component({
     selector: 'app-home',
     standalone: true,
-    imports: [CommonModule, CardModule, ChartModule, TableModule, ChipModule, ButtonModule, InputTextModule, BadgeModule, DialogModule, StackedChartComponent, AutoCompleteModule, FormsModule, TooltipModule, TabulatorTableComponent],
+    imports: [
+        CommonModule, CardModule, ChartModule, TableModule, ChipModule, 
+        ButtonModule, InputTextModule, BadgeModule, DialogModule, 
+        StackedChartComponent, AutoCompleteModule, FormsModule, 
+        TooltipModule, TabulatorTableComponent, ToastModule
+    ],
     templateUrl: './home.html',
-    styleUrls: ['./home.css']
+    styleUrls: ['./home.css'],
+    providers: [MessageService]
 })
 export class Home implements OnInit {
     nextRunTimer = '7H:52M:25S';
@@ -35,23 +43,27 @@ export class Home implements OnInit {
     filterSubgroups: any[] = [];
 
     // Column options for dropdown
-    columnOptions = ['Bwic Cover', 'Ticker', 'CUSIP', 'Bias', 'Date', 'Source'];
+    columnOptions = ['Bwic Cover', 'Ticker', 'CUSIP', 'Bias', 'Date', 'Source', 'Sector', 'Rank', 'Price'];
     filteredColumnOptions: string[] = [];
 
     // Operator options for dropdown
     operatorOptions = ['Equal to', 'Not equal to', 'contains', 'Starts with', 'Ends with', 'is greater than', 'is less than'];
     filteredOperatorOptions: string[] = [];
 
-    // Logical operators for subgroups
-    logicalOperators = ['AND', 'OR'];
-
     // Chart data
     availableColorsChart: any;
     availableColorsOptions: any;
 
     // Table data - will be loaded from backend
-    tableData: any[] = [];
+    tableData: ColorDisplay[] = [];
     selectedRows: any[] = [];
+
+    // Available sectors for filtering
+    availableSectors: string[] = [];
+    selectedSector: string | null = null;
+
+    // Output statistics
+    outputStats: OutputStats | null = null;
 
     // Tabulator configuration
     tabulatorConfig: TableConfig = {
@@ -69,12 +81,16 @@ export class Home implements OnInit {
 
     constructor(
         private tableStateService: TableStateService,
-        private apiService: ApiService
+        private apiService: ApiService,
+        private messageService: MessageService
     ) {}
 
     ngOnInit() {
         console.log('🚀 Home component initialized - loading data from backend...');
         this.loadDataFromBackend();
+        this.loadAvailableSectors();
+        this.loadOutputStats();
+        
         // Initialize filtered options with all options
         this.filteredColumnOptions = [...this.columnOptions];
         this.filteredOperatorOptions = [...this.operatorOptions];
@@ -84,50 +100,47 @@ export class Home implements OnInit {
         console.log('📡 Fetching data from backend API...');
 
         // Load monthly stats for chart
-        this.apiService.getMonthlyStats().subscribe({
+        this.apiService.getMonthlyStats(this.selectedSector || undefined).subscribe({
             next: (response) => {
                 console.log('✅ Monthly stats received:', response.stats.length, 'months');
-                const data = response.stats.map((stat) => stat.count);
-                const labels = response.stats.map((stat) => {
+                const data = response.stats.map((stat: MonthlyStats) => stat.total_colors);
+                const labels = response.stats.map((stat: MonthlyStats) => {
                     const date = new Date(stat.month);
-                    return date.toLocaleDateString('en-US', { month: 'short' });
+                    return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
                 });
                 this.initChart(data, labels);
             },
             error: (error) => {
                 console.error('❌ Error loading monthly stats:', error);
-                console.log('Falling back to hardcoded chart data');
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Failed to load monthly statistics'
+                });
                 this.initChart();
             }
         });
 
         // Load colors data for table
-        this.apiService.getColors(0, 100).subscribe({
+        this.apiService.getColors(0, 100, this.selectedSector || undefined).subscribe({
             next: (response) => {
                 console.log('✅ Colors received from backend:', response.colors.length, 'total:', response.total_count);
-                this.tableData = response.colors.map((color) => {
-                    const price = color.price || 0;
-                    return {
-                        messageId: color.message_id,
-                        tickerId: color.ticker,
-                        cusip: color.cusip,
-                        bias: this.formatBias(color.bias),
-                        date: this.formatDate(color.date),
-                        bid: price.toFixed(1),
-                        mid: (price + 1).toFixed(1),
-                        ask: (price + 2).toFixed(1),
-                        source: color.source,
-                        isParent: color.is_parent,
-                        childrenCount: color.children_count || 0
-                    };
+                
+                // Convert backend format to frontend display format
+                this.tableData = response.colors.map((color: ColorProcessed, index: number) => {
+                    return this.apiService.convertToDisplayFormat(color, index);
                 });
+                
                 console.log('✅ Loaded', this.tableData.length, 'colors from backend');
                 console.log('Sample data:', this.tableData[0]);
             },
             error: (error) => {
                 console.error('❌ Error loading colors from backend:', error);
-                console.log('Error details:', error.message);
-                console.log('Using fallback hardcoded data');
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Failed to load color data from backend'
+                });
             }
         });
 
@@ -139,17 +152,42 @@ export class Home implements OnInit {
             },
             error: (error) => {
                 console.error('❌ Error loading next run time:', error);
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Warning',
+                    detail: 'Could not load next run schedule'
+                });
             }
         });
     }
 
-    private formatBias(bias: string): string {
-        return bias.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+    private loadAvailableSectors() {
+        this.apiService.getAvailableSectors().subscribe({
+            next: (response) => {
+                this.availableSectors = response.sectors;
+                console.log('✅ Available sectors loaded:', this.availableSectors);
+            },
+            error: (error) => {
+                console.error('❌ Error loading sectors:', error);
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'Warning',
+                    detail: 'Could not load available sectors'
+                });
+            }
+        });
     }
 
-    private formatDate(dateStr: string): string {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    private loadOutputStats() {
+        this.apiService.getOutputStats().subscribe({
+            next: (stats) => {
+                this.outputStats = stats;
+                console.log('✅ Output stats loaded:', stats);
+            },
+            error: (error) => {
+                console.error('❌ Error loading output stats:', error);
+            }
+        });
     }
 
     private initChart(data?: number[], labels?: string[]) {
@@ -245,6 +283,19 @@ export class Home implements OnInit {
         };
     }
 
+    // ==================== SECTOR FILTERING ====================
+
+    onSectorChange(sector: string | null) {
+        this.selectedSector = sector;
+        console.log('🔍 Filtering by sector:', sector);
+        this.loadDataFromBackend();
+    }
+
+    clearSectorFilter() {
+        this.selectedSector = null;
+        this.loadDataFromBackend();
+    }
+
     // ==================== FILTER SEARCH METHODS ====================
 
     searchColumn(event: any) {
@@ -320,14 +371,6 @@ export class Home implements OnInit {
         }
     }
 
-    updateSubgroupLogicalOperator(subgroupId: number, operator: string) {
-        console.log('🔄 Updating subgroup operator to:', operator);
-        const subgroup = this.filterSubgroups.find((s) => s.id === subgroupId);
-        if (subgroup) {
-            subgroup.logicalOperator = operator;
-        }
-    }
-
     // ==================== FILTER ACTIONS ====================
 
     removeAllFilters() {
@@ -335,18 +378,21 @@ export class Home implements OnInit {
         this.filterConditions = [];
         this.filterSubgroups = [];
         this.addCondition();
+        this.clearSectorFilter();
     }
 
     applyFilters() {
         console.log('✅ Applying filters');
         const allFilters = {
             conditions: this.filterConditions,
-            subgroups: this.filterSubgroups
+            subgroups: this.filterSubgroups,
+            sector: this.selectedSector
         };
         console.log('📋 Complete filter structure:', allFilters);
         this.filterVisible = false;
-        // TODO: Send filters to backend API
-        // this.apiService.applyFilters(allFilters).subscribe(...)
+        
+        // Reload data with filters
+        this.loadDataFromBackend();
     }
 
     // ==================== TABULATOR TABLE METHODS ====================
@@ -383,6 +429,11 @@ export class Home implements OnInit {
     fetchData() {
         console.log('📥 Fetching latest data...');
         this.loadDataFromBackend();
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Refreshed',
+            detail: 'Data refreshed from backend'
+        });
     }
 
     exportAll() {
@@ -400,6 +451,12 @@ export class Home implements OnInit {
         link.click();
         window.URL.revokeObjectURL(url);
         console.log('✅ Export completed');
+        
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Exported',
+            detail: `${dataToExport.length} row(s) exported to CSV`
+        });
     }
 
     private convertToCSV(data: any[]): string {
@@ -419,18 +476,28 @@ export class Home implements OnInit {
 
     importViaExcel() {
         console.log('📥 Import ID via Excel clicked');
-        alert('Excel import feature - Upload file with Message IDs to filter');
+        // Redirect to manual color page for Excel import
+        window.location.href = '/manual-color';
     }
 
     refreshColors() {
         console.log('🔄 Refreshing colors...');
         this.loadDataFromBackend();
-        alert('Colors refreshed! Loaded latest data from backend.');
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Refreshed',
+            detail: 'Colors refreshed from backend'
+        });
     }
 
     overrideAndRun() {
         console.log('⚙️ Override & Run clicked');
-        alert('Manual ranking override triggered. This will re-run the ranking engine.');
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Manual Override',
+            detail: 'Manual ranking override triggered'
+        });
+        // TODO: Implement manual override API call
     }
 
     importSample() {
@@ -445,7 +512,12 @@ export class Home implements OnInit {
 
     restoreLastRun() {
         console.log('↩️ Restore last run clicked');
-        alert('Restore last run: This will reload the previous ranking results.');
+        this.messageService.add({
+            severity: 'info',
+            summary: 'Restore Last Run',
+            detail: 'Restoring previous ranking results...'
+        });
+        // TODO: Implement restore last run functionality
     }
 
     cronJobsAndTime() {
@@ -457,5 +529,19 @@ export class Home implements OnInit {
         return this.selectedRows.length > 0 
             ? `Export Selected (${this.selectedRows.length})` 
             : 'Export All';
+    }
+
+    // ==================== OUTPUT STATS DISPLAY ====================
+
+    getProcessedCount(): number {
+        return this.outputStats?.total_count || 0;
+    }
+
+    getAutomatedCount(): number {
+        return this.outputStats?.automated_count || 0;
+    }
+
+    getManualCount(): number {
+        return this.outputStats?.manual_count || 0;
     }
 }
