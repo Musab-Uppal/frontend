@@ -68,8 +68,8 @@ export class ManualColor implements OnInit {
     editable: true,
     selectable: true,
     showSelectButton: true,
-    showRowNumbers: true,
-    pagination: true,
+    showRowNumbers: false,
+    pagination: false,
     pageSize: 20
   };
 

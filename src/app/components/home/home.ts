@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -32,6 +32,9 @@ import { StackedChartComponent } from '../stacked-chart/stacked-chart.component'
     providers: [MessageService]
 })
 export class Home implements OnInit {
+    @ViewChild('mainTable') mainTable!: CustomTableComponent;
+    @ViewChild('expandedTable') expandedTable!: CustomTableComponent;
+
     nextRunTimer = '7H:52M:25S';
     filterVisible: boolean = false;
     isTableExpanded: boolean = false;
@@ -58,7 +61,7 @@ export class Home implements OnInit {
         editable: false,       // READ ONLY on home page
         selectable: true,
         showSelectButton: true,
-        showRowNumbers: true,
+        showRowNumbers: false,
         pagination: true,
         pageSize: 20
     };
@@ -143,6 +146,69 @@ export class Home implements OnInit {
     onTableRowsSelected(selectedRows: TableRow[]) {
         console.log('✅ Rows selected:', selectedRows.length);
         this.selectedRows = selectedRows;
+    }
+
+    // ==================== MESSAGE ID LOOKUP ====================
+
+    onMessageIdLookup(event: { row: TableRow; value: any }) {
+        const messageId = Number(event.value);
+        if (isNaN(messageId)) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'Invalid ID',
+                detail: 'Please enter a valid numeric Message ID'
+            });
+            return;
+        }
+
+        this.apiService.getColorByMessageId(messageId).subscribe({
+            next: (response) => {
+                if (response.colors && response.colors.length > 0) {
+                    const color = response.colors[0];
+                    const rowData: Partial<TableRow> = {
+                        messageId: String(color.message_id),
+                        ticker: color.ticker,
+                        cusip: color.cusip,
+                        bias: color.bias,
+                        date: color.date ? new Date(color.date).toLocaleDateString() : '',
+                        bid: color.bid,
+                        mid: (color.bid + color.ask) / 2,
+                        ask: color.ask,
+                        px: color.px,
+                        source: color.source,
+                        rank: color.rank,
+                        isParent: color.is_parent,
+                        parentRow: color.parent_message_id,
+                        childrenCount: color.children_count || 0
+                    };
+
+                    const table = this.isTableExpanded ? this.expandedTable : this.mainTable;
+                    if (table) {
+                        table.updateRowData(event.row._rowId!, rowData);
+                    }
+
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Data Found',
+                        detail: `Loaded data for Message ID ${messageId}`
+                    });
+                } else {
+                    this.messageService.add({
+                        severity: 'warn',
+                        summary: 'Not Found',
+                        detail: `No data found for Message ID ${messageId}`
+                    });
+                }
+            },
+            error: (error) => {
+                console.error('Error fetching message ID:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Fetch Failed',
+                    detail: 'Failed to fetch data from backend'
+                });
+            }
+        });
     }
 
     // ==================== TABLE EXPANSION ====================

@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ChangeDetectionStrategy, ChangeDetectorRef, ElementRef, ViewChildren, QueryList, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -33,16 +33,6 @@ export interface TableConfig {
   pageSize?: number;
 }
 
-/**
- * Simple row numbering structure
- * parentNum: Parent gets a number (1, 2, 3...)
- * childNum: Each child under parent gets 1, 2, 3... then resets for next parent
- */
-interface RowNumbering {
-  parentNum: number;
-  childNum: number;
-}
-
 @Component({
   selector: 'app-custom-table',
   standalone: true,
@@ -52,36 +42,46 @@ interface RowNumbering {
   providers: [MessageService],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CustomTableComponent implements OnChanges {
+export class CustomTableComponent implements OnChanges, AfterViewChecked {
   @Input() columns: TableColumn[] = [];
-  @Input() data: TableRow[] = [];
+  @Input() set data(value: TableRow[]) {
+    this._rawData = value;
+  }
+  get data(): TableRow[] {
+    return this._processedData;
+  }
   @Input() config: TableConfig = {
     editable: false,
     selectable: true,
     showSelectButton: true,
-    showRowNumbers: true,
+    showRowNumbers: false,
     pagination: true,
     pageSize: 20
   };
+  @Input() primaryField: string = 'messageId';
 
   @Output() dataChanged = new EventEmitter<TableRow[]>();
   @Output() rowsSelected = new EventEmitter<TableRow[]>();
   @Output() cellEdited = new EventEmitter<{ row: TableRow; field: string; oldValue: any; newValue: any }>();
   @Output() onExpandButtonClick = new EventEmitter<void>();
+  @Output() primaryFieldLookup = new EventEmitter<{ row: TableRow; value: any }>();
 
+  private _rawData: TableRow[] = [];
+  private _processedData: TableRow[] = [];
   displayData: TableRow[] = [];
   selectedRows: TableRow[] = [];
   currentPage = 1;
   totalPages = 1;
   editingCell: { rowId: string; field: string } | null = null;
   tempEditValue: any = '';
+  private _needsFocus = false;
 
-  /**
-   * Maps rowId -> RowNumbering
-   */
-  rowNumberingMap: { [key: string]: RowNumbering } = {};
+  /** Track which parent rows are expanded (by _rowId) */
+  expandedRows = new Set<string>();
 
   Math = Math;
+
+  @ViewChildren('cellInput') cellInputs!: QueryList<ElementRef<HTMLInputElement>>;
 
   constructor(
     private messageService: MessageService,
@@ -96,72 +96,82 @@ export class CustomTableComponent implements OnChanges {
     }
   }
 
+  ngAfterViewChecked() {
+    if (this._needsFocus && this.cellInputs && this.cellInputs.length > 0) {
+      this.cellInputs.first.nativeElement.focus();
+      this._needsFocus = false;
+    }
+  }
+
   private initializeData() {
-    // Add unique row IDs if not present
-    this.data = this.data.map((row, index) => ({
+    this._processedData = this._rawData.map((row, index) => ({
       ...row,
       _rowId: row._rowId || `row_${index}_${Date.now()}`,
       _selected: row._selected || false
     }));
-    
-    // Build simple row numbering
-    this.buildSimpleRowNumbering();
+
     this.updateDisplayData();
   }
 
+  // ==================== DISPLAY DATA ====================
+
   /**
-   * SIMPLE ROW NUMBERING LOGIC
-   * 
-   * Rules:
-   * 1. Parent rows get sequential numbers: 1, 2, 3...
-   * 2. Child rows get: 1, 2, 3... (reset for each parent)
-   * 
-   * No complex matching needed - just sequential numbering
+   * Build display data: in non-editable mode show only parent rows
+   * + children of expanded parents. In editable mode show everything.
    */
-  private buildSimpleRowNumbering() {
-    this.rowNumberingMap = {};
-    let parentNumber = 0;
-    let currentParentRowId: string | null = null;
-    let childCounter = 0;
+  private updateDisplayData() {
+    let visibleRows: TableRow[];
 
-    for (const row of this.data) {
-      const rowId = row._rowId || '';
-
-      if (row.isParent === true) {
-        // This is a parent row
-        parentNumber++;
-        currentParentRowId = rowId;
-        childCounter = 0;
-
-        this.rowNumberingMap[rowId] = {
-          parentNum: parentNumber,
-          childNum: 0
-        };
-      } else if (row.parentRow !== undefined && row.parentRow !== null && currentParentRowId) {
-        // This is a child row (belongs to current parent)
-        childCounter++;
-
-        this.rowNumberingMap[rowId] = {
-          parentNum: parentNumber,
-          childNum: childCounter
-        };
+    if (this.config.editable) {
+      // Editable mode: show all rows, no pagination
+      visibleRows = [...this._processedData];
+    } else {
+      // Non-editable mode: only parents + expanded children
+      visibleRows = [];
+      for (const row of this._processedData) {
+        if (row.isParent === true) {
+          visibleRows.push(row);
+          // If this parent is expanded, add its children
+          if (this.expandedRows.has(row._rowId!)) {
+            const children = this._processedData.filter(
+              r => !r.isParent && r.parentRow !== undefined && r.parentRow !== null &&
+                   this.getParentRowId(r) === row._rowId
+            );
+            visibleRows.push(...children);
+          }
+        }
       }
     }
-  }
 
-  private updateDisplayData() {
-    if (this.config.pagination) {
-      const startIndex = (this.currentPage - 1) * (this.config.pageSize || 20);
-      const endIndex = startIndex + (this.config.pageSize || 20);
-      this.displayData = this.data.slice(startIndex, endIndex);
+    // Apply pagination only if enabled
+    if (this.config.pagination && !this.config.editable) {
+      const pageSize = this.config.pageSize || 20;
+      // Count only parents for pagination
+      const parentRows = visibleRows.filter(r => r.isParent === true);
+      this.totalPages = Math.ceil(parentRows.length / pageSize);
+
+      // Paginate by parent groups
+      const pagedRows: TableRow[] = [];
+      let parentCount = 0;
+      for (const row of visibleRows) {
+        if (row.isParent === true) {
+          parentCount++;
+        }
+        if (parentCount > (this.currentPage - 1) * (this.config.pageSize || 20) &&
+            parentCount <= this.currentPage * (this.config.pageSize || 20)) {
+          pagedRows.push(row);
+        }
+      }
+      this.displayData = pagedRows;
     } else {
-      this.displayData = [...this.data];
+      this.displayData = visibleRows;
     }
   }
 
   private updatePagination() {
-    if (this.config.pagination) {
-      this.totalPages = Math.ceil(this.data.length / (this.config.pageSize || 20));
+    if (this.config.pagination && !this.config.editable) {
+      const parentCount = this._processedData.filter(r => r.isParent === true).length;
+      this.totalPages = Math.ceil(parentCount / (this.config.pageSize || 20));
       if (this.currentPage > this.totalPages && this.totalPages > 0) {
         this.currentPage = this.totalPages;
         this.updateDisplayData();
@@ -169,35 +179,77 @@ export class CustomTableComponent implements OnChanges {
     }
   }
 
-  // ==================== SELECTION ====================
-
-  toggleRowSelection(row: TableRow) {
-    // Find the row in the main data array
-    const dataRow = this.data.find(r => r._rowId === row._rowId);
-    
-    if (dataRow) {
-      // Toggle the selection on the main data row
-      dataRow._selected = !dataRow._selected;
-      
-      // Update the display row reference too
-      const displayRow = this.displayData.find(r => r._rowId === row._rowId);
-      if (displayRow) {
-        displayRow._selected = dataRow._selected;
+  /** Find the _rowId of the parent for a child row */
+  private getParentRowId(childRow: TableRow): string | null {
+    // Children are placed after their parent in the array.
+    // Walk backwards from this child to find its parent.
+    const childIndex = this._processedData.indexOf(childRow);
+    for (let i = childIndex - 1; i >= 0; i--) {
+      if (this._processedData[i].isParent === true) {
+        return this._processedData[i]._rowId || null;
       }
     }
-    
+    return null;
+  }
+
+  // ==================== EXPAND / COLLAPSE ====================
+
+  toggleRowExpand(row: TableRow) {
+    if (this.expandedRows.has(row._rowId!)) {
+      this.expandedRows.delete(row._rowId!);
+    } else {
+      this.expandedRows.add(row._rowId!);
+    }
+    this.updateDisplayData();
+    this.cdr.markForCheck();
+  }
+
+  isRowExpanded(row: TableRow): boolean {
+    return this.expandedRows.has(row._rowId!);
+  }
+
+  hasChildren(row: TableRow): boolean {
+    return row.isParent === true && (row.childrenCount ?? 0) > 0;
+  }
+
+  // ==================== SELECTION ====================
+
+  toggleSelectAll() {
+    const allVisibleSelected = this.isAllSelected();
+    this.displayData.forEach(row => {
+      row._selected = !allVisibleSelected;
+      const dataRow = this._processedData.find(r => r._rowId === row._rowId);
+      if (dataRow) dataRow._selected = !allVisibleSelected;
+    });
+    this.updateSelectedRows();
+    this.cdr.markForCheck();
+  }
+
+  isAllSelected(): boolean {
+    return this.displayData.length > 0 && this.displayData.every(row => row._selected === true);
+  }
+
+  isSomeSelected(): boolean {
+    return this.displayData.some(row => row._selected === true) && !this.isAllSelected();
+  }
+
+  toggleRowSelection(row: TableRow) {
+    const dataRow = this._processedData.find(r => r._rowId === row._rowId);
+    if (dataRow) {
+      dataRow._selected = !dataRow._selected;
+      row._selected = dataRow._selected;
+    }
     this.updateSelectedRows();
     this.cdr.markForCheck();
   }
 
   private updateSelectedRows() {
-    // Get all selected rows from main data array
-    this.selectedRows = this.data.filter(row => row._selected === true);
+    this.selectedRows = this._processedData.filter(row => row._selected === true);
     this.rowsSelected.emit(this.selectedRows);
   }
 
   clearSelection() {
-    this.data.forEach(row => row._selected = false);
+    this._processedData.forEach(row => row._selected = false);
     this.displayData.forEach(row => row._selected = false);
     this.selectedRows = [];
     this.rowsSelected.emit([]);
@@ -211,13 +263,27 @@ export class CustomTableComponent implements OnChanges {
   // ==================== EDITING ====================
 
   startEdit(row: TableRow, field: string) {
-    if (!this.config.editable) return;
-    
-    const column = this.columns.find(col => col.field === field);
-    if (!column || column.editable === false) return;
+    // If already editing this exact cell, do nothing (prevents re-trigger on input click)
+    if (this.editingCell &&
+        this.editingCell.rowId === row._rowId &&
+        this.editingCell.field === field) {
+      return;
+    }
+
+    const isPrimaryField = field === this.primaryField;
+
+    // In non-editable mode, only allow editing the primary field
+    if (!this.config.editable && !isPrimaryField) return;
+
+    // In editable mode, respect per-column editable flag
+    if (this.config.editable) {
+      const column = this.columns.find(col => col.field === field);
+      if (!column || column.editable === false) return;
+    }
 
     this.editingCell = { rowId: row._rowId!, field };
     this.tempEditValue = row[field];
+    this._needsFocus = true;
     this.cdr.markForCheck();
   }
 
@@ -227,16 +293,32 @@ export class CustomTableComponent implements OnChanges {
     const oldValue = row[field];
     const newValue = this.tempEditValue;
 
+    // In non-editable mode, primary field triggers a lookup instead of local save
+    if (!this.config.editable && field === this.primaryField) {
+      if (newValue && newValue !== oldValue) {
+        row[field] = newValue;
+        const dataRow = this._processedData.find(r => r._rowId === row._rowId);
+        if (dataRow) {
+          dataRow[field] = newValue;
+        }
+        this.primaryFieldLookup.emit({ row, value: newValue });
+      }
+      this.editingCell = null;
+      this.tempEditValue = '';
+      this.cdr.markForCheck();
+      return;
+    }
+
     if (oldValue !== newValue) {
       row[field] = newValue;
-      
-      const dataRow = this.data.find(r => r._rowId === row._rowId);
+
+      const dataRow = this._processedData.find(r => r._rowId === row._rowId);
       if (dataRow) {
         dataRow[field] = newValue;
       }
 
       this.cellEdited.emit({ row, field, oldValue, newValue });
-      this.dataChanged.emit(this.data);
+      this.dataChanged.emit(this._processedData);
     }
 
     this.editingCell = null;
@@ -251,8 +333,8 @@ export class CustomTableComponent implements OnChanges {
   }
 
   isEditing(row: TableRow, field: string): boolean {
-    return this.editingCell !== null && 
-           this.editingCell.rowId === row._rowId && 
+    return this.editingCell !== null &&
+           this.editingCell.rowId === row._rowId &&
            this.editingCell.field === field;
   }
 
@@ -271,7 +353,8 @@ export class CustomTableComponent implements OnChanges {
 
     const newRow: TableRow = {
       _rowId: `row_new_${Date.now()}`,
-      _selected: false
+      _selected: false,
+      isParent: true
     };
 
     this.columns.forEach(col => {
@@ -280,18 +363,16 @@ export class CustomTableComponent implements OnChanges {
       }
     });
 
-    this.data.unshift(newRow);
-    this.buildSimpleRowNumbering();
-    this.updatePagination();
+    this._processedData.unshift(newRow);
     this.updateDisplayData();
-    this.dataChanged.emit(this.data);
+    this.dataChanged.emit(this._processedData);
 
     this.messageService.add({
       severity: 'success',
       summary: 'Row Added',
       detail: 'New row added to the table'
     });
-    
+
     this.cdr.markForCheck();
   }
 
@@ -306,42 +387,39 @@ export class CustomTableComponent implements OnChanges {
     }
 
     const rowsToDelete = new Set<string>();
-    
+
     this.selectedRows.forEach(selectedRow => {
       rowsToDelete.add(selectedRow._rowId!);
-      
+
       if (selectedRow['isParent']) {
         this.findAndMarkChildren(selectedRow, rowsToDelete);
       }
     });
 
-    this.data = this.data.filter(row => !rowsToDelete.has(row._rowId!));
-    
+    this._processedData = this._processedData.filter(row => !rowsToDelete.has(row._rowId!));
+
     this.clearSelection();
-    this.buildSimpleRowNumbering();
     this.updatePagination();
     this.updateDisplayData();
-    this.dataChanged.emit(this.data);
+    this.dataChanged.emit(this._processedData);
 
     this.messageService.add({
       severity: 'success',
       summary: 'Deleted',
       detail: `${rowsToDelete.size} row(s) deleted successfully`
     });
-    
+
     this.cdr.markForCheck();
   }
 
   private findAndMarkChildren(parentRow: TableRow, deleteSet: Set<string>) {
-    const parentMessageId = parentRow['message_id'] || parentRow['messageId'] || parentRow['MESSAGE_ID'];
     const parentRowId = parentRow._rowId;
-    
-    this.data.forEach(row => {
-      if ((row['parentRow'] === parentMessageId || row['parentRow'] === parentRowId) && row._rowId !== parentRowId) {
-        deleteSet.add(row._rowId!);
-        
-        if (row['isParent']) {
-          this.findAndMarkChildren(row, deleteSet);
+
+    this._processedData.forEach(row => {
+      if (!row.isParent && row._rowId !== parentRowId) {
+        const rowParentId = this.getParentRowId(row);
+        if (rowParentId === parentRowId) {
+          deleteSet.add(row._rowId!);
         }
       }
     });
@@ -377,23 +455,21 @@ export class CustomTableComponent implements OnChanges {
     }
 
     const row = this.selectedRows[0];
-    const dataRow = this.data.find(r => r._rowId === row._rowId);
-    
+    const dataRow = this._processedData.find(r => r._rowId === row._rowId);
+
     if (dataRow) {
       dataRow['isParent'] = true;
       dataRow['parentRow'] = undefined;
-      dataRow['childrenCount'] = (dataRow['childrenCount'] ?? 0);
-      
-      this.buildSimpleRowNumbering();
+
       this.updateDisplayData();
-      this.dataChanged.emit(this.data);
-      
+      this.dataChanged.emit(this._processedData);
+
       this.messageService.add({
         severity: 'success',
         summary: 'Updated',
         detail: 'Row assigned as parent'
       });
-      
+
       this.cdr.markForCheck();
     }
   }
@@ -413,7 +489,7 @@ export class CustomTableComponent implements OnChanges {
       summary: 'Saved',
       detail: `${this.selectedRows.length} row(s) saved`
     });
-    
+
     this.rowsSelected.emit(this.selectedRows);
   }
 
@@ -446,32 +522,32 @@ export class CustomTableComponent implements OnChanges {
   getPageNumbers(): number[] {
     const pages: number[] = [];
     const maxVisible = 5;
-    
+
     let start = Math.max(1, this.currentPage - Math.floor(maxVisible / 2));
     let end = Math.min(this.totalPages, start + maxVisible - 1);
-    
+
     if (end - start < maxVisible - 1) {
       start = Math.max(1, end - maxVisible + 1);
     }
-    
+
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
-    
+
     return pages;
   }
 
   // ==================== EXPORT ====================
 
   getExportLabel(): string {
-    return this.selectedRows.length > 0 
-      ? `Export Selected (${this.selectedRows.length})` 
+    return this.selectedRows.length > 0
+      ? `Export Selected (${this.selectedRows.length})`
       : 'Export All';
   }
 
   exportToCSV() {
-    const dataToExport = this.selectedRows.length > 0 ? this.selectedRows : this.data;
-    
+    const dataToExport = this.selectedRows.length > 0 ? this.selectedRows : this._processedData;
+
     if (dataToExport.length === 0) {
       this.messageService.add({
         severity: 'warn',
@@ -484,13 +560,13 @@ export class CustomTableComponent implements OnChanges {
     const headers = this.columns
       .filter(col => col.field !== 'select')
       .map(col => col.header);
-    
+
     const fields = this.columns
       .filter(col => col.field !== 'select')
       .map(col => col.field);
 
     let csv = headers.join(',') + '\n';
-    
+
     dataToExport.forEach(row => {
       const values = fields.map(field => {
         let value = row[field] || '';
@@ -519,37 +595,42 @@ export class CustomTableComponent implements OnChanges {
 
   // ==================== HELPERS ====================
 
-  /**
-   * Get display row number
-   * 
-   * Parent row: Shows parent number (1, 2, 3...)
-   * Child row: Shows child number (1, 2, 3... resets per parent)
-   */
-  getDisplayRowNumber(row: TableRow): string {
-    const rowId = row._rowId;
-    if (!rowId || !this.rowNumberingMap[rowId]) {
-      return '0';
-    }
-
-    const numbering = this.rowNumberingMap[rowId];
-    
-    // If parent, show parent number; if child, show child number
-    if (row.isParent === true) {
-      return numbering.parentNum.toString();
-    } else {
-      return numbering.childNum.toString();
-    }
-  }
-
   trackByRowId(index: number, row: TableRow): string {
     return row._rowId || `${index}`;
   }
 
   isChildRow(row: TableRow): boolean {
-    return row.isParent !== true && !!row.parentRow;
+    return row.isParent !== true && row.parentRow !== undefined && row.parentRow !== null;
   }
 
   isParentRow(row: TableRow): boolean {
     return row.isParent === true;
+  }
+
+  canEditCell(column: TableColumn): boolean {
+    if (this.config.editable && column.editable !== false) return true;
+    if (!this.config.editable && column.field === this.primaryField) return true;
+    return false;
+  }
+
+  updateRowData(rowId: string, data: Partial<TableRow>) {
+    const dataRow = this._processedData.find(r => r._rowId === rowId);
+    if (dataRow) {
+      Object.assign(dataRow, data);
+    }
+    const displayRow = this.displayData.find(r => r._rowId === rowId);
+    if (displayRow) {
+      Object.assign(displayRow, data);
+    }
+    this.cdr.markForCheck();
+  }
+
+  /** Get parent count for display */
+  getParentCount(): number {
+    return this._processedData.filter(r => r.isParent === true).length;
+  }
+
+  getTotalCount(): number {
+    return this._processedData.length;
   }
 }

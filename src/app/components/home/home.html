@@ -162,12 +162,15 @@
 
         <!-- ================= TABULATOR TABLE ================= -->
         <div class="relative">
-            <app-custom-table 
-                [columns]="tableColumns" 
-                [data]="tableData" 
+            <app-custom-table
+                #mainTable
+                [columns]="tableColumns"
+                [data]="tableData"
                 [config]="tableConfig"
-                (dataChanged)="onTableDataChanged($event)" 
+                primaryField="messageId"
+                (dataChanged)="onTableDataChanged($event)"
                 (rowsSelected)="onTableRowsSelected($event)"
+                (primaryFieldLookup)="onMessageIdLookup($event)"
                 (onExpandButtonClick)="toggleTableExpansion()">
             </app-custom-table>
         </div>
@@ -268,8 +271,15 @@
 
         <!-- TABLE IN EXPANDED MODE -->
         <div class="flex-1 overflow-auto px-6 py-4">
-            <app-custom-table [columns]="tableColumns" [data]="tableData" [config]="tableConfig"
-                (dataChanged)="onTableDataChanged($event)" (rowsSelected)="onTableRowsSelected($event)">
+            <app-custom-table
+                #expandedTable
+                [columns]="tableColumns"
+                [data]="tableData"
+                [config]="tableConfig"
+                primaryField="messageId"
+                (dataChanged)="onTableDataChanged($event)"
+                (rowsSelected)="onTableRowsSelected($event)"
+                (primaryFieldLookup)="onMessageIdLookup($event)">
             </app-custom-table>
         </div>
     </div>

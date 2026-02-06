@@ -353,6 +353,18 @@ export class ApiService {
         return this.http.get<ConnectionInfo>(`${this.baseUrl}/api/admin/connection-info`);
     }
 
+    // ==================== LOOKUP METHODS ====================
+
+    /**
+     * Fetch color data by message ID
+     */
+    getColorByMessageId(messageId: number): Observable<ColorResponse> {
+        const params = new HttpParams()
+            .set('message_id', messageId.toString())
+            .set('limit', '1');
+        return this.http.get<ColorResponse>(`${this.baseUrl}/api/dashboard/colors`, { params });
+    }
+
     // ==================== UTILITY METHODS ====================
 
     /**

@@ -130,17 +130,9 @@
   background: #ffffff;
 }
 
-.row-number-column {
-  width: 60px !important;
-  text-align: center !important;
-  position: sticky;
-  left: 60px;
-  z-index: 11;
-  background: #ffffff;
-}
-
 /* Expand button in header */
 .expand-header-th {
+  width: 48px !important;
   padding: 8px !important;
   text-align: center !important;
   border-bottom: 1px solid #d1d5db;
@@ -178,123 +170,7 @@
 }
 
 /* ================================
-   ROWS & CELLS
-   ================================ */
-
-.custom-table tbody tr {
-  background: #ffffff;
-  border-bottom: 1px solid #f3f4f6;
-  transition: background-color 0.2s ease;
-}
-
-.custom-table tbody tr:hover {
-  background: #f9fafb;
-}
-
-.custom-table tbody tr.selected-row {
-  background: #eff6ff !important;
-}
-
-/* Parent row styling - light/normal background */
-.custom-table tbody tr.parent-row {
-  background: #ffffff;
-  font-weight: 500;
-}
-
-.custom-table tbody tr.parent-row:hover {
-  background: #f9fafb;
-}
-
-.custom-table tbody tr.parent-row.selected-row {
-  background: #eff6ff !important;
-}
-
-/* Child row styling - darker background relative to parent */
-.custom-table tbody tr.child-row {
-  background: #e8e8e8;
-  font-weight: 400;
-}
-
-.custom-table tbody tr.child-row:hover {
-  background: #dcdcdc;
-}
-
-.custom-table tbody tr.child-row.selected-row {
-  background: #eff6ff !important;
-}
-
-.custom-table td.expand-column {
-  left: 120px;
-  background: #ffffff;
-}
-
-.custom-table tr.child-row td.expand-column {
-  background: #e8e8e8;
-}
-
-.custom-table tr.parent-row td.expand-column {
-  background: #ffffff;
-}
-
-.custom-table tr.selected-row td.expand-column {
-  background: #eff6ff;
-}
-
-.custom-table td {
-  padding: 10px 12px;
-  border-right: 1px solid #f3f4f6;
-  font-size: 13px;
-  color: #111827;
-  vertical-align: middle;
-}
-
-.custom-table td:last-child {
-  border-right: none;
-}
-
-.custom-table td.select-column,
-.custom-table td.row-number-column {
-  position: sticky;
-  background: inherit;
-  z-index: 5;
-}
-
-.custom-table td.select-column {
-  left: 0;
-  background: #ffffff;
-}
-
-.custom-table tr.parent-row td.select-column {
-  background: #ffffff;
-}
-
-.custom-table tr.child-row td.select-column {
-  background: #e8e8e8;
-}
-
-.custom-table tr.selected-row td.select-column {
-  background: #eff6ff;
-}
-
-.custom-table td.row-number-column {
-  left: 60px;
-  background: #ffffff;
-}
-
-.custom-table tr.parent-row td.row-number-column {
-  background: #ffffff;
-}
-
-.custom-table tr.child-row td.row-number-column {
-  background: #e8e8e8;
-}
-
-.custom-table tr.selected-row td.row-number-column {
-  background: #eff6ff;
-}
-
-/* ================================
-   SELECT BUTTON
+   SELECT BUTTON (header & rows)
    ================================ */
 
 .select-btn {
@@ -321,21 +197,159 @@
   color: #ffffff;
 }
 
+.select-btn.indeterminate {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
 .select-btn i {
   font-size: 12px;
 }
 
 /* ================================
-   ROW NUMBER
+   ROWS & CELLS
    ================================ */
 
-.row-number {
-  display: flex;
+.custom-table tbody tr {
+  background: #ffffff;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s ease;
+}
+
+.custom-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.custom-table tbody tr.selected-row {
+  background: #eff6ff !important;
+}
+
+/* Parent row styling */
+.custom-table tbody tr.parent-row {
+  background: #ffffff;
+  font-weight: 500;
+}
+
+.custom-table tbody tr.parent-row:hover {
+  background: #f9fafb;
+}
+
+.custom-table tbody tr.parent-row.selected-row {
+  background: #eff6ff !important;
+}
+
+/* Child row styling - slightly darker background */
+.custom-table tbody tr.child-row {
+  background: #f3f4f6;
+  font-weight: 400;
+}
+
+.custom-table tbody tr.child-row:hover {
+  background: #e5e7eb;
+}
+
+.custom-table tbody tr.child-row.selected-row {
+  background: #dbeafe !important;
+}
+
+/* Child row left indent on first data cell */
+.child-data-cell:first-of-type {
+  padding-left: 28px !important;
+}
+
+/* Child row select cell */
+.child-select-cell {
+  background: #f3f4f6 !important;
+}
+
+/* Data cells */
+.custom-table td {
+  padding: 10px 12px;
+  border-right: 1px solid #f3f4f6;
+  font-size: 13px;
+  color: #111827;
+  vertical-align: middle;
+}
+
+.custom-table td:last-child {
+  border-right: none;
+}
+
+/* Sticky select column in body */
+.custom-table td.select-column {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  background: #ffffff;
+}
+
+.custom-table tr.parent-row td.select-column {
+  background: #ffffff;
+}
+
+.custom-table tr.child-row td.select-column {
+  background: #f3f4f6;
+}
+
+.custom-table tr.selected-row td.select-column {
+  background: #eff6ff;
+}
+
+/* Expand column in body */
+.expand-column {
+  width: 48px !important;
+  text-align: center !important;
+  padding: 8px !important;
+}
+
+.custom-table td.expand-column {
+  background: #ffffff;
+}
+
+.custom-table tr.child-row td.expand-column {
+  background: #f3f4f6;
+}
+
+.custom-table tr.parent-row td.expand-column {
+  background: #ffffff;
+}
+
+.custom-table tr.selected-row td.expand-column {
+  background: #eff6ff;
+}
+
+/* ================================
+   ROW EXPAND / CHEVRON BUTTON
+   ================================ */
+
+.row-expand-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  font-size: 13px;
-  color: #6b7280;
+  transition: all 0.2s ease;
+  padding: 0;
+  font-size: 0;
+}
+
+.row-expand-btn:hover {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.row-expand-btn:active {
+  background: #d1d5db;
+}
+
+.row-expand-btn i {
+  font-size: 14px;
 }
 
 /* ================================
@@ -356,13 +370,44 @@
 }
 
 .custom-table tr.child-row .editable-cell:hover {
-  background: #dcdcdc;
+  background: #e5e7eb;
 }
 
 .cell-content {
   min-height: 20px;
   width: 100%;
   word-break: break-word;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ================================
+   PRIMARY FIELD (lookup cell in read-only mode)
+   ================================ */
+
+.primary-field-cell {
+  cursor: pointer;
+  position: relative;
+}
+
+.primary-field-cell:hover {
+  background: #f0f7ff;
+}
+
+.primary-field-cell:hover .cell-content {
+  color: #2563eb;
+}
+
+.primary-field-icon {
+  font-size: 10px;
+  color: #93bbfd;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.primary-field-cell:hover .primary-field-icon {
+  opacity: 1;
 }
 
 .cell-input {
