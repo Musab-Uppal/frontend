@@ -1,3 +1,4 @@
+<p-toast position="top-right"></p-toast>
 <div class="min-h-screen">
     <!-- MAIN WRAPPER -->
     <div class="max-w-[1800px] ml-0 mr-auto pl-2 pr-4 py-2 space-y-6">
@@ -270,6 +271,99 @@
             </app-custom-table>
         </div>
     </div>
+
+    <!-- ================= IMPORT DIALOG ================= -->
+    <p-dialog
+        header="Import via Excel"
+        [(visible)]="showImportDialog"
+        [modal]="true"
+        [style]="{'width': '500px'}"
+        [closable]="true"
+        [showHeader]="true">
+
+        <div class="p-4">
+            <p class="text-sm text-gray-600 mb-6 font-medium">
+                Upload an Excel file to import color data directly into the dashboard.
+            </p>
+
+            <!-- Drop Zone -->
+            <div *ngIf="!selectedFile || isUploading"
+                class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-gray-50">
+                <p-progressSpinner
+                    *ngIf="isUploading"
+                    [style]="{width: '50px', height: '50px'}"
+                    strokeWidth="4"
+                    class="mb-4">
+                </p-progressSpinner>
+
+                <i *ngIf="!isUploading" class="pi pi-cloud-upload text-3xl text-green-500 mb-3 block"></i>
+
+                <p class="text-sm font-medium text-gray-700 mb-2">
+                    {{ isUploading ? 'Uploading...' : 'Drop your file here' }}
+                </p>
+
+                <input
+                    *ngIf="!isUploading"
+                    #fileInputRef
+                    type="file"
+                    accept=".xlsx,.xls"
+                    style="display: none;"
+                    (change)="onNativeFileSelect($event)">
+
+                <button
+                    *ngIf="!isUploading"
+                    pButton
+                    label="Browse Files"
+                    icon="pi pi-folder-open"
+                    class="p-button-outlined p-button-sm"
+                    (click)="triggerFileInput()">
+                </button>
+            </div>
+
+            <!-- File info -->
+            <div *ngIf="selectedFile && !isUploading" class="mt-4 p-4 bg-gray-50 rounded-xl flex items-center gap-4">
+                <i [class]="'pi ' + getFileIcon() + ' text-2xl text-blue-500'"></i>
+                <div class="flex-1">
+                    <p class="font-medium text-sm">{{ selectedFile.name }}</p>
+                    <p class="text-xs text-gray-500">{{ fileSize }}</p>
+                </div>
+                <button
+                    pButton
+                    icon="pi pi-times"
+                    class="p-button-text p-button-sm"
+                    (click)="onCancelImport()"
+                    pTooltip="Remove file">
+                </button>
+            </div>
+
+            <div class="my-4 border-t border-gray-200"></div>
+
+            <p class="text-xs text-gray-500 text-center mb-6">
+                Only .xlsx or .xls file extensions are supported
+            </p>
+
+            <!-- Actions -->
+            <div class="flex justify-end gap-3">
+                <button
+                    pButton
+                    label="Cancel"
+                    icon="pi pi-times"
+                    class="p-button-outlined p-button-sm"
+                    (click)="onCancelImport()"
+                    [disabled]="isUploading">
+                </button>
+
+                <button
+                    pButton
+                    label="Import"
+                    icon="pi pi-upload"
+                    class="p-button-sm"
+                    (click)="onUploadImport()"
+                    [disabled]="!selectedFile || isUploading">
+                </button>
+            </div>
+        </div>
+    </p-dialog>
 
     <!-- ================= FILTER MODAL ================= -->
     <app-filter-dialog [(visible)]="filterVisible" (filtersApplied)="onFiltersApplied($event)">

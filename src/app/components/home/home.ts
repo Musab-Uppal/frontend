@@ -1,11 +1,14 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
+import { DialogModule } from 'primeng/dialog';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
 import { CustomTableComponent, TableColumn, TableRow, TableConfig } from '../custom-table/custom-table.component';
 import { FilterDialogComponent, FilterCondition } from '../filter-dialog/filter-dialog.component';
@@ -23,6 +26,8 @@ import { StackedChartComponent } from '../stacked-chart/stacked-chart.component'
         FormsModule,
         ToastModule,
         TooltipModule,
+        DialogModule,
+        ProgressSpinnerModule,
         CustomTableComponent,
         FilterDialogComponent,
         StackedChartComponent
@@ -34,10 +39,17 @@ import { StackedChartComponent } from '../stacked-chart/stacked-chart.component'
 export class Home implements OnInit {
     @ViewChild('mainTable') mainTable!: CustomTableComponent;
     @ViewChild('expandedTable') expandedTable!: CustomTableComponent;
+    @ViewChild('fileInputRef') fileInputRef!: ElementRef<HTMLInputElement>;
 
     nextRunTimer = '7H:52M:25S';
     filterVisible: boolean = false;
     isTableExpanded: boolean = false;
+
+    // Import dialog state
+    showImportDialog = false;
+    isUploading = false;
+    selectedFile: File | null = null;
+    fileSize: string = '';
 
     // Active filters for display as chips
     activeFilters: FilterCondition[] = [];
@@ -71,7 +83,8 @@ export class Home implements OnInit {
 
     constructor(
         private apiService: ApiService,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private router: Router
     ) {}
 
     ngOnInit() {
@@ -247,22 +260,18 @@ export class Home implements OnInit {
     // ==================== ACTIONS ====================
 
     refreshColors() {
-        console.log('🔄 Refreshing colors...');
-        this.loadDataFromBackend();
-        this.messageService.add({
-            severity: 'success',
-            summary: 'Refreshed',
-            detail: 'Colors refreshed from backend'
-        });
+        console.log('🔄 Refresh Colors Now - navigating to color process...');
+        this.router.navigate(['/color-type']);
     }
 
     overrideAndRun() {
-        console.log('⚙️ Override & Run clicked');
+        console.log('⚙️ Override & Run - canceling scheduled run and running immediately...');
         this.messageService.add({
             severity: 'info',
-            summary: 'Manual Override',
-            detail: 'Manual ranking override triggered'
+            summary: 'Override Triggered',
+            detail: 'Canceling next scheduled run and running immediately...'
         });
+        this.router.navigate(['/color-type']);
     }
 
     importSample() {
@@ -290,8 +299,11 @@ export class Home implements OnInit {
     }
 
     importViaExcel() {
-        console.log('📥 Import ID via Excel clicked');
-        window.location.href = '/manual-color';
+        console.log('📥 Import via Excel - opening import dialog');
+        this.showImportDialog = true;
+        this.selectedFile = null;
+        this.fileSize = '';
+        this.isUploading = false;
     }
 
     fetchData() {
@@ -457,5 +469,117 @@ export class Home implements OnInit {
         return this.selectedRows.length > 0
             ? `Export Selected (${this.selectedRows.length})`
             : 'Export All';
+    }
+
+    // ==================== FILE IMPORT ====================
+
+    triggerFileInput() {
+        if (this.fileInputRef?.nativeElement) {
+            this.fileInputRef.nativeElement.click();
+        }
+    }
+
+    onNativeFileSelect(event: any) {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+
+        const file: File = files[0];
+        const validExtensions = ['.xlsx', '.xls'];
+        const isValidFile = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+        if (!isValidFile) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Invalid File',
+                detail: 'Only .xlsx and .xls files are supported'
+            });
+            return;
+        }
+
+        this.selectedFile = file;
+        this.fileSize = this.formatFileSize(file.size);
+        event.target.value = '';
+    }
+
+    onUploadImport() {
+        if (!this.selectedFile) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'No File Selected',
+                detail: 'Please select a file to import'
+            });
+            return;
+        }
+
+        this.isUploading = true;
+
+        this.apiService.importManualColorFile(this.selectedFile, 1).subscribe({
+            next: (response: any) => {
+                if (response.success) {
+                    this.tableData = response.sorted_preview.map((row: any, index: number) => ({
+                        _rowId: `row_${row.message_id}`,
+                        _selected: false,
+                        rowNumber: String(index + 1),
+                        messageId: String(row.message_id),
+                        ticker: row.ticker,
+                        cusip: row.cusip,
+                        bias: row.bias,
+                        date: row.date ? new Date(row.date).toLocaleDateString() : '',
+                        bid: row.bid,
+                        mid: (row.bid + row.ask) / 2,
+                        ask: row.ask,
+                        px: row.px,
+                        source: row.source,
+                        rank: row.rank,
+                        isParent: row.is_parent,
+                        parentRow: row.parent_message_id,
+                        childrenCount: row.child_count || 0
+                    }));
+
+                    this.showImportDialog = false;
+
+                    this.messageService.add({
+                        severity: 'success',
+                        summary: 'Import Successful',
+                        detail: `Imported ${response.rows_imported} rows. ${response.statistics.parent_rows} parents, ${response.statistics.child_rows} children.`
+                    });
+                } else {
+                    throw new Error(response.error || 'Import failed');
+                }
+            },
+            error: (error) => {
+                console.error('Error uploading file:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Upload Failed',
+                    detail: error.error?.detail || 'Failed to upload file to backend'
+                });
+            },
+            complete: () => {
+                this.isUploading = false;
+            }
+        });
+    }
+
+    onCancelImport() {
+        this.showImportDialog = false;
+        this.selectedFile = null;
+        this.fileSize = '';
+        this.isUploading = false;
+    }
+
+    getFileIcon(): string {
+        if (!this.selectedFile) return 'pi-file';
+        const name = this.selectedFile.name.toLowerCase();
+        if (name.endsWith('.xlsx') || name.endsWith('.xls')) return 'pi-file-excel';
+        return 'pi-file';
+    }
+
+    private formatFileSize(bytes: number): string {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
     }
 }

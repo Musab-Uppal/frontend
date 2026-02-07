@@ -43,9 +43,13 @@ export class ManualColor implements OnInit {
   isTableExpanded: boolean = false;
   selectedFile: File | null = null;
   fileSize: string = '';
-  
+  presetCount: number = 11;
+
   // Session management
   currentSessionId: string | null = null;
+
+  // Undo history
+  private undoStack: TableRow[][] = [];
 
   // Active filters for display as chips
   activeFilters: FilterCondition[] = [];
@@ -288,6 +292,7 @@ export class ManualColor implements OnInit {
   // ==================== ACTIONS ====================
 
   addNewRow() {
+    this.saveUndoState();
     const newRow: TableRow = {
       _rowId: `row_new_${Date.now()}`,
       _selected: false,
@@ -464,6 +469,52 @@ export class ManualColor implements OnInit {
       severity: 'info',
       summary: 'Filters Cleared',
       detail: 'All filters removed'
+    });
+  }
+
+  // ==================== SORTING ====================
+
+  showSortingDialog() {
+    console.log('📊 Sorting dialog requested');
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Sorting',
+      detail: 'Sorting options coming soon'
+    });
+  }
+
+  // ==================== UNDO ====================
+
+  undoLastAction() {
+    if (this.undoStack.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Nothing to Undo',
+        detail: 'No previous actions to undo'
+      });
+      return;
+    }
+
+    this.tableData = this.undoStack.pop()!;
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Undo',
+      detail: 'Last action undone'
+    });
+  }
+
+  saveUndoState() {
+    this.undoStack.push([...this.tableData.map(row => ({ ...row }))]);
+  }
+
+  // ==================== PRESETS ====================
+
+  showPresetsDialog() {
+    console.log('🎛️ Presets dialog requested');
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Presets',
+      detail: 'Preset filters will be loaded from settings'
     });
   }
 }

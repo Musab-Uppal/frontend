@@ -18,7 +18,7 @@ import { TableStateService } from '../../components/home/table-state.service'; /
         <div
             class="layout-main-container"
             [class.layout-main-container-full]="isTableExpanded"
-            [style.marginLeft]="!isTableExpanded && layoutService.layoutConfig().menuMode === 'static' && !layoutService.layoutState().staticMenuDesktopInactive ? '17rem' : '0'"
+            [style.marginLeft]="getMainContainerMargin()"
         >
             <div class="layout-main">
                 <router-outlet></router-outlet>
@@ -31,7 +31,7 @@ import { TableStateService } from '../../components/home/table-state.service'; /
         `
             .layout-main-container {
                 margin-left: 17rem;
-                transition: margin-left var(--layout-section-transition-duration);
+                transition: margin-left 0.3s ease;
             }
 
             .layout-main-container-full {
@@ -39,8 +39,11 @@ import { TableStateService } from '../../components/home/table-state.service'; /
                 width: 100% !important;
             }
 
-            /* When sidebar is collapsed or in overlay mode */
-            .layout-static-inactive .layout-main-container,
+            /* When sidebar is collapsed - show icon-only sidebar */
+            .layout-static-inactive .layout-main-container {
+                margin-left: 4.5rem;
+            }
+
             .layout-overlay .layout-main-container {
                 margin-left: 0;
             }
@@ -119,6 +122,12 @@ export class AppLayout implements OnInit, OnDestroy {
         } else {
             document.body.className = document.body.className.replace(new RegExp('(^|\\b)' + 'blocked-scroll'.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
         }
+    }
+
+    getMainContainerMargin(): string {
+        if (this.isTableExpanded) return '0';
+        if (this.layoutService.layoutConfig().menuMode !== 'static') return '0';
+        return this.layoutService.layoutState().staticMenuDesktopInactive ? '4.5rem' : '17rem';
     }
 
     get containerClass() {

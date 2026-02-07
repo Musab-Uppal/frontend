@@ -43,12 +43,20 @@
                     (click)="showFilters()">
                 </button>
 
-                <button 
-                    pButton 
-                    label="Import via Excel" 
-                    icon="pi pi-upload" 
-                    class="p-button-sm !bg-gray-100 !rounded-2xl hover:bg-gray-200 !px-5 !py-3 !text-black !border-none" 
+                <button
+                    pButton
+                    label="Import via Excel"
+                    icon="pi pi-upload"
+                    class="p-button-sm !bg-gray-100 !rounded-2xl hover:bg-gray-200 !px-5 !py-3 !text-black !border-none"
                     (click)="openImportDialog()">
+                </button>
+
+                <button
+                    pButton
+                    label="Sorting"
+                    icon="pi pi-sort-alt"
+                    class="p-button-sm !bg-gray-100 !rounded-2xl hover:bg-gray-200 !px-5 !py-3 !text-black !border-none"
+                    (click)="showSortingDialog()">
                 </button>
             </div>
 
@@ -67,27 +75,51 @@
         </div>
     </div>
 
-    <!-- Active Filter Chips -->
-    <div *ngIf="activeFilters.length > 0" class="bg-white rounded-2xl p-4 mb-4">
+    <!-- Active Filter Chips + Undo / Presets -->
+    <div class="bg-white rounded-2xl p-4 mb-4">
         <div class="flex flex-wrap items-center gap-3">
-            <div *ngFor="let filter of activeFilters; let i = index"
-                class="flex items-center gap-3 px-5 py-2.5 rounded-full bg-gray-100 text-gray-900 border border-gray-200">
-                <i class="pi pi-filter text-gray-700"></i>
-                <span class="text-sm font-medium whitespace-nowrap">
-                    {{ filter.columnDisplay }} : {{ filter.operatorDisplay }} {{ filter.values }}
-                    <span *ngIf="filter.values2"> - {{ filter.values2 }}</span>
-                </span>
-                <button class="text-red-500 hover:text-red-600" aria-label="Remove filter"
-                    (click)="removeFilter(i)">
-                    <i class="pi pi-times"></i>
-                </button>
-            </div>
+            <!-- Filter chips -->
+            <ng-container *ngIf="activeFilters.length > 0">
+                <div *ngFor="let filter of activeFilters; let i = index"
+                    class="flex items-center gap-3 px-5 py-2.5 rounded-full bg-gray-100 text-gray-900 border border-gray-200">
+                    <i class="pi pi-filter text-gray-700"></i>
+                    <span class="text-sm font-medium whitespace-nowrap">
+                        {{ filter.columnDisplay }} : {{ filter.operatorDisplay }} {{ filter.values }}
+                        <span *ngIf="filter.values2"> - {{ filter.values2 }}</span>
+                    </span>
+                    <button class="text-red-500 hover:text-red-600" aria-label="Remove filter"
+                        (click)="removeFilter(i)">
+                        <i class="pi pi-times"></i>
+                    </button>
+                </div>
 
+                <button
+                    class="flex items-center gap-2 rounded-full px-5 py-2.5 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+                    (click)="removeAllActiveFilters()">
+                    <i class="pi pi-trash text-sm"></i>
+                    Remove all filters
+                </button>
+            </ng-container>
+
+            <!-- Spacer -->
+            <div class="flex-1"></div>
+
+            <!-- Undo button -->
             <button
-                class="flex items-center gap-2 rounded-full px-5 py-2.5 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                (click)="removeAllActiveFilters()">
-                <i class="pi pi-trash text-sm"></i>
-                Remove all filters
+                pButton
+                label="Undo"
+                icon="pi pi-undo"
+                class="p-button-sm !bg-gray-100 !rounded-2xl hover:bg-gray-200 !px-5 !py-2.5 !text-black !border-none"
+                (click)="undoLastAction()">
+            </button>
+
+            <!-- Presets button -->
+            <button
+                pButton
+                icon="pi pi-sliders-h"
+                class="p-button-sm !bg-gray-100 !rounded-2xl hover:bg-gray-200 !px-5 !py-2.5 !text-black !border-none"
+                (click)="showPresetsDialog()">
+                <span class="ml-2">{{ presetCount }} Presets</span>
             </button>
         </div>
     </div>

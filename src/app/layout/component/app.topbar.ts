@@ -15,22 +15,25 @@ import { filter, Subscription } from 'rxjs';
     imports: [RouterModule, CommonModule, StyleClassModule, SelectModule, FormsModule],
     template: `
     <div class="layout-topbar">
+        <!-- LEFT: Logo + Menu toggle + Page title -->
         <div class="layout-topbar-logo-container">
-            <a class="layout-topbar-logo flex items-center gap-4" routerLink="/">
-                <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
-                    <i class="pi pi-bars"></i>
-                </button>
-
-                <!-- Brand -->
+            <a class="layout-topbar-logo" routerLink="/">
                 <div class="flex flex-col leading-tight">
                     <span class="font-bold whitespace-nowrap">Market Pulse</span>
                     <span class="text-xs text-gray-500 whitespace-nowrap">
                         Movement Intelligence
                     </span>
                 </div>
-
-                <div class="hidden md:block h-6 w-px bg-gray-300"></div>
             </a>
+
+            <!-- MENU TOGGLE (next to logo, outside the <a> tag) -->
+            <button
+                class="layout-menu-button"
+                (click)="onMenuToggle($event)">
+                <i class="pi pi-objects-column"></i>
+            </button>
+
+            <div class="hidden md:block h-6 w-px bg-gray-300"></div>
 
             <!-- PAGE TITLE (HOME ONLY) -->
             <span
@@ -40,6 +43,7 @@ import { filter, Subscription } from 'rxjs';
             </span>
         </div>
 
+        <!-- RIGHT: Actions -->
         <div class="layout-topbar-actions">
 
             <!-- ASSET SELECTION -->
@@ -54,7 +58,7 @@ import { filter, Subscription } from 'rxjs';
                 </p-select>
             </div>
 
-            <!-- NEXT RUN TIMER (PARENT HAS BORDER) -->
+            <!-- NEXT RUN TIMER -->
             <div class="next-run-wrapper">
                 <span class="next-run-label">Next Run in</span>
                 <span class="next-run-timer-pill">{{ nextRunTimer }}</span>
@@ -63,7 +67,6 @@ import { filter, Subscription } from 'rxjs';
             <!-- USER INFO -->
             <div class="user-info">
                 <span class="user-divider"></span>
-
                 <div class="user-details">
                     <div class="user-name">Shashank S.</div>
                     <div class="user-email">Shashank.Srivastava@spglobal.com</div>
@@ -192,13 +195,27 @@ import { filter, Subscription } from 'rxjs';
                 color: var(--text-color-secondary);
             }
 
-            .layout-topbar-action {
+            .layout-menu-button {
                 width: 2.5rem;
                 height: 2.5rem;
-                border-radius: 50%;
-                border: none;
-                background: transparent;
+                border-radius: 0.5rem;
+                border: 1px solid #e5e7eb;
+                background: #f9fafb;
                 cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background-color 0.2s ease;
+                margin-left: 0.5rem;
+            }
+
+            .layout-menu-button:hover {
+                background-color: #e5e7eb;
+            }
+
+            .layout-menu-button i {
+                font-size: 1.1rem;
+                color: #374151;
             }
 
             @media (max-width: 768px) {
@@ -241,6 +258,12 @@ export class AppTopbar implements OnInit, OnDestroy {
 
     private updateHomeRoute(url: string): void {
         this.isHomeRoute = url === '/' || url.startsWith('/home');
+    }
+
+    onMenuToggle(event: Event) {
+        event.stopPropagation();
+        event.preventDefault();
+        this.layoutService.onMenuToggle();
     }
 
     onAssetChange(asset: any) {
