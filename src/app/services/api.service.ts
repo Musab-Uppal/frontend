@@ -201,6 +201,158 @@ export interface ConnectionInfo {
     connection_status?: string;
 }
 
+// ==================== RULES INTERFACES ====================
+
+export interface RuleConditionBackend {
+    type: string;       // 'where', 'and', 'or'
+    column: string;
+    operator: string;
+    value: string;
+    value2?: string;    // For 'between' operator
+}
+
+export interface Rule {
+    id: number;
+    name: string;
+    conditions: RuleConditionBackend[];
+    is_active: boolean;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface RuleCreate {
+    name: string;
+    conditions: RuleConditionBackend[];
+    is_active: boolean;
+}
+
+export interface RuleUpdate {
+    name?: string;
+    conditions?: RuleConditionBackend[];
+    is_active?: boolean;
+}
+
+export interface RulesResponse {
+    rules: Rule[];
+    count: number;
+}
+
+export interface RuleOperator {
+    value: string;
+    label: string;
+    type: string;   // 'numeric' | 'text'
+}
+
+// ==================== CRON JOB INTERFACES ====================
+
+export interface CronJob {
+    id: number;
+    name: string;
+    schedule: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+    last_run?: string;
+    next_run?: string;
+}
+
+export interface CronJobCreate {
+    name: string;
+    schedule: string;
+    is_active: boolean;
+}
+
+export interface CronJobUpdate {
+    name?: string;
+    schedule?: string;
+    is_active?: boolean;
+}
+
+export interface CronJobsResponse {
+    jobs: CronJob[];
+    count: number;
+}
+
+export interface CronExecutionLog {
+    id?: number;
+    job_id: number;
+    job_name: string;
+    triggered_by: string;
+    start_time: string;
+    end_time?: string;
+    status: string;
+    duration_seconds?: number;
+    original_count?: number;
+    excluded_count?: number;
+    processed_count?: number;
+    rules_applied?: number;
+    error?: string;
+}
+
+export interface CronScheduleExample {
+    expression: string;
+    description: string;
+    frequency: string;
+}
+
+// ==================== LOGS INTERFACES ====================
+
+export interface LogEntry {
+    log_id: number;
+    module: string;
+    action: string;
+    description: string;
+    performed_by: string;
+    performed_at: string;
+    entity_id?: number;
+    entity_name?: string;
+    can_revert: boolean;
+    reverted_at?: string;
+    reverted_by?: string;
+    metadata?: any;
+}
+
+export interface LogsResponse {
+    logs: LogEntry[];
+    count: number;
+    module?: string;
+}
+
+// ==================== PRESETS INTERFACES ====================
+
+export interface PresetConditionBackend {
+    column: string;
+    operator: string;
+    value: string;
+    value2?: string;
+}
+
+export interface Preset {
+    id: number;
+    name: string;
+    description?: string;
+    conditions: PresetConditionBackend[];
+    created_at?: string;
+    created_by?: string;
+}
+
+export interface PresetCreate {
+    name: string;
+    conditions: PresetConditionBackend[];
+    description?: string;
+}
+
+export interface PresetUpdate {
+    name?: string;
+    conditions?: PresetConditionBackend[];
+    description?: string;
+}
+
+export interface PresetsResponse {
+    presets: Preset[];
+    count: number;
+}
+
 // ==================== SEARCH / FILTER INTERFACES ====================
 
 export interface SearchFilter {
@@ -579,8 +731,155 @@ export class ApiService {
             percent_diff: color.percent_diff,
             price_diff: color.price_diff,
             confidence: color.confidence,
-            date_1: color.date, // Using same date for date_1
+            date_1: color.date,
             diff_status: ''
         };
+    }
+
+    // ==================== RULES ENDPOINTS ====================
+
+    getRules(): Observable<RulesResponse> {
+        return this.http.get<RulesResponse>(`${this.baseUrl}/api/rules`);
+    }
+
+    getActiveRules(): Observable<RulesResponse> {
+        return this.http.get<RulesResponse>(`${this.baseUrl}/api/rules/active`);
+    }
+
+    getRuleById(ruleId: number): Observable<{ rule: Rule }> {
+        return this.http.get<{ rule: Rule }>(`${this.baseUrl}/api/rules/${ruleId}`);
+    }
+
+    createRule(rule: RuleCreate): Observable<{ message: string; rule: Rule }> {
+        return this.http.post<{ message: string; rule: Rule }>(`${this.baseUrl}/api/rules`, rule);
+    }
+
+    updateRule(ruleId: number, rule: RuleUpdate): Observable<{ message: string; rule: Rule }> {
+        return this.http.put<{ message: string; rule: Rule }>(`${this.baseUrl}/api/rules/${ruleId}`, rule);
+    }
+
+    deleteRule(ruleId: number): Observable<{ message: string }> {
+        return this.http.delete<{ message: string }>(`${this.baseUrl}/api/rules/${ruleId}`);
+    }
+
+    toggleRule(ruleId: number): Observable<{ message: string; rule: Rule }> {
+        return this.http.post<{ message: string; rule: Rule }>(`${this.baseUrl}/api/rules/${ruleId}/toggle`, {});
+    }
+
+    getRuleOperators(): Observable<{ operators: RuleOperator[] }> {
+        return this.http.get<{ operators: RuleOperator[] }>(`${this.baseUrl}/api/rules/operators/list`);
+    }
+
+    getRuleLogs(limit: number = 50): Observable<{ logs: any[]; count: number }> {
+        const params = new HttpParams().set('limit', limit.toString());
+        return this.http.get<{ logs: any[]; count: number }>(`${this.baseUrl}/api/rules/logs`, { params });
+    }
+
+    // ==================== CRON JOB ENDPOINTS ====================
+
+    getCronJobs(): Observable<CronJobsResponse> {
+        return this.http.get<CronJobsResponse>(`${this.baseUrl}/api/cron/jobs`);
+    }
+
+    getActiveCronJobs(): Observable<CronJobsResponse> {
+        return this.http.get<CronJobsResponse>(`${this.baseUrl}/api/cron/jobs/active`);
+    }
+
+    getCronJobById(jobId: number): Observable<CronJob> {
+        return this.http.get<CronJob>(`${this.baseUrl}/api/cron/jobs/${jobId}`);
+    }
+
+    createCronJob(job: CronJobCreate): Observable<{ message: string; job: CronJob }> {
+        return this.http.post<{ message: string; job: CronJob }>(`${this.baseUrl}/api/cron/jobs`, job);
+    }
+
+    updateCronJob(jobId: number, job: CronJobUpdate): Observable<{ message: string; job: CronJob }> {
+        return this.http.put<{ message: string; job: CronJob }>(`${this.baseUrl}/api/cron/jobs/${jobId}`, job);
+    }
+
+    deleteCronJob(jobId: number): Observable<{ message: string; job_id: number }> {
+        return this.http.delete<{ message: string; job_id: number }>(`${this.baseUrl}/api/cron/jobs/${jobId}`);
+    }
+
+    toggleCronJob(jobId: number): Observable<{ message: string; job: CronJob }> {
+        return this.http.post<{ message: string; job: CronJob }>(`${this.baseUrl}/api/cron/jobs/${jobId}/toggle`, {});
+    }
+
+    triggerCronJob(jobId: number, override: boolean = false): Observable<any> {
+        const params = new HttpParams().set('override', override.toString());
+        return this.http.post<any>(`${this.baseUrl}/api/cron/jobs/${jobId}/trigger`, {}, { params });
+    }
+
+    getCronExecutionLogs(limit: number = 50): Observable<{ logs: CronExecutionLog[]; count: number }> {
+        const params = new HttpParams().set('limit', limit.toString());
+        return this.http.get<{ logs: CronExecutionLog[]; count: number }>(`${this.baseUrl}/api/cron/logs`, { params });
+    }
+
+    getCronJobExecutionLogs(jobId: number, limit: number = 20): Observable<{ logs: CronExecutionLog[]; count: number }> {
+        const params = new HttpParams().set('limit', limit.toString());
+        return this.http.get<{ logs: CronExecutionLog[]; count: number }>(`${this.baseUrl}/api/cron/logs/${jobId}`, { params });
+    }
+
+    getCronScheduleExamples(): Observable<{ examples: CronScheduleExample[] }> {
+        return this.http.get<{ examples: CronScheduleExample[] }>(`${this.baseUrl}/api/cron/schedule-examples`);
+    }
+
+    // ==================== UNIFIED LOGS ENDPOINTS ====================
+
+    getLogs(module?: string, limit: number = 4): Observable<LogsResponse> {
+        let params = new HttpParams().set('limit', limit.toString());
+        if (module) {
+            params = params.set('module', module);
+        }
+        return this.http.get<LogsResponse>(`${this.baseUrl}/api/logs`, { params });
+    }
+
+    getRulesLogs(limit: number = 4): Observable<LogsResponse> {
+        const params = new HttpParams().set('limit', limit.toString());
+        return this.http.get<LogsResponse>(`${this.baseUrl}/api/logs/rules`, { params });
+    }
+
+    getRestoreLogs(limit: number = 4): Observable<LogsResponse> {
+        const params = new HttpParams().set('limit', limit.toString());
+        return this.http.get<LogsResponse>(`${this.baseUrl}/api/logs/restore`, { params });
+    }
+
+    getCronLogs(limit: number = 4): Observable<LogsResponse> {
+        const params = new HttpParams().set('limit', limit.toString());
+        return this.http.get<LogsResponse>(`${this.baseUrl}/api/logs/cron`, { params });
+    }
+
+    getLogStats(): Observable<any> {
+        return this.http.get<any>(`${this.baseUrl}/api/logs/stats`);
+    }
+
+    revertLog(logId: number, revertedBy: string = 'admin'): Observable<any> {
+        return this.http.post<any>(`${this.baseUrl}/api/logs/${logId}/revert`, { reverted_by: revertedBy });
+    }
+
+    // ==================== PRESETS ENDPOINTS ====================
+
+    getPresets(): Observable<PresetsResponse> {
+        return this.http.get<PresetsResponse>(`${this.baseUrl}/api/presets`);
+    }
+
+    getPresetById(presetId: number): Observable<{ preset: Preset }> {
+        return this.http.get<{ preset: Preset }>(`${this.baseUrl}/api/presets/${presetId}`);
+    }
+
+    createPreset(preset: PresetCreate): Observable<{ message: string; preset: Preset }> {
+        return this.http.post<{ message: string; preset: Preset }>(`${this.baseUrl}/api/presets`, preset);
+    }
+
+    updatePreset(presetId: number, preset: PresetUpdate): Observable<{ message: string; preset: Preset }> {
+        return this.http.put<{ message: string; preset: Preset }>(`${this.baseUrl}/api/presets/${presetId}`, preset);
+    }
+
+    deletePreset(presetId: number): Observable<{ message: string }> {
+        return this.http.delete<{ message: string }>(`${this.baseUrl}/api/presets/${presetId}`);
+    }
+
+    getPresetStats(): Observable<any> {
+        return this.http.get<any>(`${this.baseUrl}/api/presets/stats`);
     }
 }

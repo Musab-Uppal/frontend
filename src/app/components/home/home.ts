@@ -58,9 +58,9 @@ export class Home implements OnInit {
     tableData: TableRow[] = [];
     selectedRows: TableRow[] = [];
 
-    // Table configuration - READ ONLY mode for home
+    // Table configuration - Excel-like editable (messageId column editable, others auto-fill)
     tableColumns: TableColumn[] = [
-        { field: 'messageId', header: 'Message ID', width: '180px', editable: false },
+        { field: 'messageId', header: 'Message ID', width: '180px', editable: true },
         { field: 'ticker', header: 'Ticker', width: '140px', editable: false },
         { field: 'cusip', header: 'CUSIP', width: '140px', editable: false },
         { field: 'bias', header: 'Bias', width: '120px', editable: false },
@@ -73,7 +73,7 @@ export class Home implements OnInit {
     ];
 
     tableConfig: TableConfig = {
-        editable: false,       // READ ONLY on home page
+        editable: true,
         selectable: true,
         showSelectButton: true,
         showRowNumbers: true,
@@ -128,15 +128,9 @@ export class Home implements OnInit {
             },
             error: (error) => {
                 console.error('❌ Error loading colors from backend:', error);
-                
-                // Show empty table on error
-                this.tableData = [];
-                
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Failed to load color data from backend'
-                });
+
+                // Show empty rows so user can type message IDs
+                this.tableData = this.generateEmptyRows(20);
             }
         });
 
@@ -168,14 +162,11 @@ export class Home implements OnInit {
 
     onMessageIdLookup(event: { row: TableRow; value: any }) {
         const messageId = Number(event.value);
-        if (isNaN(messageId)) {
-            this.messageService.add({
-                severity: 'warn',
-                summary: 'Invalid ID',
-                detail: 'Please enter a valid numeric Message ID'
-            });
+        if (isNaN(messageId) || !event.value) {
             return;
         }
+
+        const table = this.isTableExpanded ? this.expandedTable : this.mainTable;
 
         this.apiService.getColorByMessageId(messageId).subscribe({
             next: (response) => {
@@ -198,31 +189,49 @@ export class Home implements OnInit {
                         childrenCount: color.children_count || 0
                     };
 
-                    const table = this.isTableExpanded ? this.expandedTable : this.mainTable;
                     if (table) {
                         table.updateRowData(event.row._rowId!, rowData);
                     }
-
-                    this.messageService.add({
-                        severity: 'success',
-                        summary: 'Data Found',
-                        detail: `Loaded data for Message ID ${messageId}`
-                    });
                 } else {
-                    this.messageService.add({
-                        severity: 'warn',
-                        summary: 'Not Found',
-                        detail: `No data found for Message ID ${messageId}`
-                    });
+                    // Not found - fill cells with ERROR
+                    const errorData: Partial<TableRow> = {
+                        messageId: String(event.value),
+                        ticker: 'ERROR',
+                        cusip: 'ERROR',
+                        bias: 'ERROR',
+                        date: 'ERROR',
+                        bid: 'ERROR',
+                        mid: 'ERROR',
+                        ask: 'ERROR',
+                        px: 'ERROR',
+                        source: 'ERROR'
+                    };
+
+                    if (table) {
+                        table.updateRowData(event.row._rowId!, errorData);
+                    }
                 }
             },
             error: (error) => {
                 console.error('Error fetching message ID:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Fetch Failed',
-                    detail: 'Failed to fetch data from backend'
-                });
+                // Network/server error - fill cells with ERROR
+                const errorData: Partial<TableRow> = {
+                    messageId: String(event.value),
+                    ticker: 'ERROR',
+                    cusip: 'ERROR',
+                    bias: 'ERROR',
+                    date: 'ERROR',
+                    bid: 'ERROR',
+                    mid: 'ERROR',
+                    ask: 'ERROR',
+                    px: 'ERROR',
+                    source: 'ERROR'
+                };
+
+                const tbl = this.isTableExpanded ? this.expandedTable : this.mainTable;
+                if (tbl) {
+                    tbl.updateRowData(event.row._rowId!, errorData);
+                }
             }
         });
     }
@@ -469,6 +478,30 @@ export class Home implements OnInit {
         return this.selectedRows.length > 0
             ? `Export Selected (${this.selectedRows.length})`
             : 'Export All';
+    }
+
+    generateEmptyRows(count: number): TableRow[] {
+        const rows: TableRow[] = [];
+        for (let i = 0; i < count; i++) {
+            rows.push({
+                _rowId: `row_empty_${Date.now()}_${i}`,
+                _selected: false,
+                rowNumber: String(i + 1),
+                messageId: '',
+                ticker: '',
+                cusip: '',
+                bias: '',
+                date: '',
+                bid: '',
+                mid: '',
+                ask: '',
+                px: '',
+                source: '',
+                isParent: true,
+                childrenCount: 0
+            });
+        }
+        return rows;
     }
 
     // ==================== FILE IMPORT ====================
