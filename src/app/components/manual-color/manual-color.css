@@ -285,6 +285,55 @@
     height: 50px !important;
 }
 
+/* ================================
+   RUN RULES DIALOG STYLES
+   ================================ */
+
+:host ::ng-deep .run-rules-dialog .p-dialog {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+:host ::ng-deep .run-rules-dialog .p-dialog-header {
+    padding: 16px 24px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+:host ::ng-deep .run-rules-dialog .p-dialog-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+}
+
+:host ::ng-deep .run-rules-dialog .p-dialog-content {
+    padding: 20px 24px;
+    background: #ffffff;
+}
+
+.run-rules-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.rules-list-container {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.rules-list-container table {
+    border-collapse: collapse;
+}
+
+.rules-list-container thead tr {
+    background: #f9fafb;
+}
+
+.rules-list-container tbody tr:last-child {
+    border-bottom: none;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
     .drop-zone {

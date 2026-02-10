@@ -11,7 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { CustomTableComponent, TableColumn, TableRow, TableConfig } from '../custom-table/custom-table.component';
 import { FilterDialogComponent, FilterCondition } from '../filter-dialog/filter-dialog.component';
-import { ApiService, SearchFilter } from '../../services/api.service';
+import { ApiService, SearchFilter, Rule, RuleConditionBackend } from '../../services/api.service';
 
 @Component({
   selector: 'app-manual-color',
@@ -44,6 +44,14 @@ export class ManualColor implements OnInit {
   selectedFile: File | null = null;
   fileSize: string = '';
   presetCount: number = 11;
+
+  // Run Rules dialog state
+  showRunRulesDialog = false;
+  availableRules: Rule[] = [];
+  selectedRuleIds: Set<number> = new Set();
+  ruleSearchText = '';
+  loadingRules = false;
+  runningRules = false;
 
   // Session management
   currentSessionId: string | null = null;
@@ -321,8 +329,126 @@ export class ManualColor implements OnInit {
     });
   }
 
+  // ==================== RUN RULES ====================
+
+  openRunRulesDialog() {
+    this.showRunRulesDialog = true;
+    this.ruleSearchText = '';
+    this.selectedRuleIds.clear();
+    this.loadRules();
+  }
+
+  loadRules() {
+    this.loadingRules = true;
+    this.apiService.getRules().subscribe({
+      next: (response) => {
+        this.availableRules = response.rules;
+        // Pre-select active rules
+        this.availableRules.forEach(rule => {
+          if (rule.is_active) {
+            this.selectedRuleIds.add(rule.id);
+          }
+        });
+        this.loadingRules = false;
+      },
+      error: (error) => {
+        console.error('Error loading rules:', error);
+        this.loadingRules = false;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load rules'
+        });
+      }
+    });
+  }
+
+  toggleRuleSelection(ruleId: number) {
+    if (this.selectedRuleIds.has(ruleId)) {
+      this.selectedRuleIds.delete(ruleId);
+    } else {
+      this.selectedRuleIds.add(ruleId);
+    }
+  }
+
+  isRuleSelected(ruleId: number): boolean {
+    return this.selectedRuleIds.has(ruleId);
+  }
+
+  get filteredRules(): Rule[] {
+    if (!this.ruleSearchText.trim()) return this.availableRules;
+    const search = this.ruleSearchText.toLowerCase();
+    return this.availableRules.filter(r => r.name.toLowerCase().includes(search));
+  }
+
+  get allFilteredRulesSelected(): boolean {
+    return this.filteredRules.length > 0 && this.filteredRules.every(r => this.selectedRuleIds.has(r.id));
+  }
+
+  toggleSelectAll() {
+    if (this.allFilteredRulesSelected) {
+      this.filteredRules.forEach(r => this.selectedRuleIds.delete(r.id));
+    } else {
+      this.filteredRules.forEach(r => this.selectedRuleIds.add(r.id));
+    }
+  }
+
+  cancelRunRules() {
+    this.showRunRulesDialog = false;
+  }
+
+  runSelectedRules() {
+    if (this.selectedRuleIds.size === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No Rules Selected',
+        detail: 'Please select at least one rule to run'
+      });
+      return;
+    }
+
+    if (this.tableData.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No Data',
+        detail: 'No data in the table to filter'
+      });
+      return;
+    }
+
+    this.saveUndoState();
+    this.runningRules = true;
+
+    const selectedRules = this.availableRules.filter(r => this.selectedRuleIds.has(r.id));
+    const originalCount = this.tableData.length;
+
+    // Apply rules - remove rows that match any selected rule (exclusion rules)
+    const filteredData = this.tableData.filter(row => {
+      for (const rule of selectedRules) {
+        if (this.evaluateRule(row, rule)) {
+          return false; // Exclude this row
+        }
+      }
+      return true; // Keep this row
+    });
+
+    const excludedCount = originalCount - filteredData.length;
+    this.tableData = filteredData;
+    this.runningRules = false;
+    this.showRunRulesDialog = false;
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Rules Applied',
+      detail: `${selectedRules.length} rule(s) applied. ${excludedCount} row(s) excluded, ${filteredData.length} remaining.`
+    });
+  }
+
+  /**
+   * Run all active rules automatically (Run Automation button)
+   */
   runAutomation() {
-    if (!this.currentSessionId) {
+    if (this.tableData.length === 0) {
       this.messageService.add({
         severity: 'warn',
         summary: 'No Data',
@@ -331,20 +457,185 @@ export class ManualColor implements OnInit {
       return;
     }
 
-    console.log('⚙️ Running automation...');
     this.messageService.add({
       severity: 'info',
       summary: 'Processing',
-      detail: 'Running automation rules...'
+      detail: 'Running all active rules...'
     });
 
-    setTimeout(() => {
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Complete',
-        detail: 'Automation completed successfully'
-      });
-    }, 1000);
+    this.apiService.getActiveRules().subscribe({
+      next: (response) => {
+        const activeRules = response.rules;
+        if (activeRules.length === 0) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'No Active Rules',
+            detail: 'No active rules found. Go to Settings to configure rules.'
+          });
+          return;
+        }
+
+        this.saveUndoState();
+        const originalCount = this.tableData.length;
+
+        const filteredData = this.tableData.filter(row => {
+          for (const rule of activeRules) {
+            if (this.evaluateRule(row, rule)) {
+              return false;
+            }
+          }
+          return true;
+        });
+
+        const excludedCount = originalCount - filteredData.length;
+        this.tableData = filteredData;
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Automation Complete',
+          detail: `${activeRules.length} active rule(s) applied. ${excludedCount} row(s) excluded, ${filteredData.length} remaining.`
+        });
+      },
+      error: (error) => {
+        console.error('Error running automation:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to fetch active rules'
+        });
+      }
+    });
+  }
+
+  // ==================== RULE EVALUATION ENGINE ====================
+  // Mirrors backend rules_service.py logic
+
+  private evaluateRule(row: any, rule: Rule): boolean {
+    const conditions = rule.conditions || [];
+    if (conditions.length === 0) return false;
+
+    let result: boolean | null = null;
+
+    for (const condition of conditions) {
+      const conditionType = condition.type || 'where';
+      const conditionMatch = this.evaluateCondition(row, condition);
+
+      if (result === null) {
+        result = conditionMatch;
+      } else if (conditionType === 'and') {
+        result = result && conditionMatch;
+      } else if (conditionType === 'or') {
+        result = result || conditionMatch;
+      } else if (conditionType === 'where') {
+        result = conditionMatch;
+      }
+    }
+
+    return result ?? false;
+  }
+
+  private evaluateCondition(row: any, condition: RuleConditionBackend): boolean {
+    const column = condition.column || '';
+    let operator = (condition.operator || '').toLowerCase();
+    const value = condition.value || '';
+    const value2 = condition.value2 || '';
+
+    // Normalize operators (matching backend operator_map)
+    const operatorMap: { [key: string]: string } = {
+      'equal to': 'equal_to',
+      'not equal to': 'not_equal_to',
+      'less than': 'less_than',
+      'greater than': 'greater_than',
+      'less than equal to': 'less_than_equal_to',
+      'greater than equal to': 'greater_than_equal_to',
+      'between': 'between',
+      'contains': 'contains',
+      'starts with': 'starts_with',
+      'ends with': 'ends_with',
+      'is equal to': 'equal_to',
+      'is not equal to': 'not_equal_to',
+      'equals': 'equal_to',
+      'not_equals': 'not_equal_to',
+      'not_contains': 'not_contains',
+      'does not contain': 'not_contains',
+      'greater_than': 'greater_than',
+      'less_than': 'less_than',
+      'greater_or_equal': 'greater_than_equal_to',
+      'less_or_equal': 'less_than_equal_to'
+    };
+
+    operator = operatorMap[operator] || operator;
+
+    const rowValue = this.getRowValue(row, column);
+    const compareValue = String(value);
+
+    switch (operator) {
+      case 'equal_to': {
+        const numRow = parseFloat(rowValue);
+        const numCmp = parseFloat(compareValue);
+        if (!isNaN(numRow) && !isNaN(numCmp)) return numRow === numCmp;
+        return rowValue.toLowerCase() === compareValue.toLowerCase();
+      }
+      case 'not_equal_to': {
+        const numRow = parseFloat(rowValue);
+        const numCmp = parseFloat(compareValue);
+        if (!isNaN(numRow) && !isNaN(numCmp)) return numRow !== numCmp;
+        return rowValue.toLowerCase() !== compareValue.toLowerCase();
+      }
+      case 'contains':
+        return rowValue.toLowerCase().includes(compareValue.toLowerCase());
+      case 'not_contains':
+        return !rowValue.toLowerCase().includes(compareValue.toLowerCase());
+      case 'starts_with':
+        return rowValue.toLowerCase().startsWith(compareValue.toLowerCase());
+      case 'ends_with':
+        return rowValue.toLowerCase().endsWith(compareValue.toLowerCase());
+      case 'less_than': {
+        const a = parseFloat(rowValue), b = parseFloat(compareValue);
+        return !isNaN(a) && !isNaN(b) && a < b;
+      }
+      case 'greater_than': {
+        const a = parseFloat(rowValue), b = parseFloat(compareValue);
+        return !isNaN(a) && !isNaN(b) && a > b;
+      }
+      case 'less_than_equal_to': {
+        const a = parseFloat(rowValue), b = parseFloat(compareValue);
+        return !isNaN(a) && !isNaN(b) && a <= b;
+      }
+      case 'greater_than_equal_to': {
+        const a = parseFloat(rowValue), b = parseFloat(compareValue);
+        return !isNaN(a) && !isNaN(b) && a >= b;
+      }
+      case 'between': {
+        const rowNum = parseFloat(rowValue);
+        const minVal = parseFloat(compareValue);
+        const maxVal = parseFloat(value2);
+        return !isNaN(rowNum) && !isNaN(minVal) && !isNaN(maxVal) && minVal <= rowNum && rowNum <= maxVal;
+      }
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Get row value by column name with case-insensitive + snake_case→camelCase lookup
+   * Handles backend Oracle column names (MESSAGE_ID) matching frontend keys (messageId)
+   */
+  private getRowValue(row: any, column: string): string {
+    const lowerCol = column.toLowerCase();
+
+    // Direct case-insensitive match
+    for (const key of Object.keys(row)) {
+      if (key.toLowerCase() === lowerCol) return String(row[key] ?? '');
+    }
+
+    // Snake_case to camelCase conversion (e.g., MESSAGE_ID → messageId)
+    const camelCase = lowerCol.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+    for (const key of Object.keys(row)) {
+      if (key.toLowerCase() === camelCase.toLowerCase()) return String(row[key] ?? '');
+    }
+
+    return '';
   }
 
   saveData() {

@@ -276,12 +276,11 @@
                     </div>
                     <div class="col-span-12 md:col-span-4">
                         <label class="text-xs text-gray-600 mb-1 block">Cron Schedule</label>
-                        <div class="relative">
-                            <select [(ngModel)]="newJobSchedule" class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
-                                <option *ngFor="let ex of scheduleExamples" [value]="ex.expression">{{ ex.description }} ({{ ex.expression }})</option>
-                            </select>
-                            <i class="pi pi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
-                        </div>
+                        <input type="text" [(ngModel)]="newJobSchedule" placeholder="0 9 * * 1-5" list="scheduleOptions" class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        <datalist id="scheduleOptions">
+                            <option *ngFor="let ex of scheduleExamples" [value]="ex.expression">{{ ex.description }}</option>
+                        </datalist>
+                        <p class="text-xs text-gray-400 mt-1" *ngIf="newJobSchedule">{{ getScheduleDescription(newJobSchedule) }}</p>
                     </div>
                     <div class="col-span-12 md:col-span-2">
                         <label class="text-xs text-gray-600 mb-1 block">Active</label>
@@ -332,14 +331,14 @@
                         <tr *ngIf="cronJobs.length === 0">
                             <td colspan="5" class="px-4 py-6 text-center text-sm text-gray-500">No cron jobs found. Create one above.</td>
                         </tr>
-                        <tr *ngFor="let job of cronJobs" class="border-b border-gray-100 hover:bg-gray-50 transition-colors" [class.bg-blue-50]="(job | any)?.isEditing">
+                        <tr *ngFor="let job of cronJobs" class="border-b border-gray-100 hover:bg-gray-50 transition-colors" [class.bg-blue-50]="$any(job).isEditing">
                             <td class="px-4 py-3 text-sm text-gray-900">
-                                <span *ngIf="!(job | any)?.isEditing">{{ job.name }}</span>
-                                <input *ngIf="(job | any)?.isEditing" [(ngModel)]="job.name" class="w-full px-2 py-1 border border-gray-300 rounded text-sm" />
+                                <span *ngIf="!$any(job).isEditing">{{ job.name }}</span>
+                                <input *ngIf="$any(job).isEditing" [(ngModel)]="job.name" class="w-full px-2 py-1 border border-gray-300 rounded text-sm" />
                             </td>
                             <td class="px-4 py-3 text-sm text-gray-900">
-                                <span *ngIf="!(job | any)?.isEditing" class="text-xs bg-gray-100 px-2 py-1 rounded font-mono">{{ job.schedule }}</span>
-                                <input *ngIf="(job | any)?.isEditing" [(ngModel)]="job.schedule" class="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono" />
+                                <span *ngIf="!$any(job).isEditing" class="text-xs bg-gray-100 px-2 py-1 rounded font-mono">{{ job.schedule }}</span>
+                                <input *ngIf="$any(job).isEditing" [(ngModel)]="job.schedule" class="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono" />
                             </td>
                             <td class="px-4 py-3">
                                 <button
@@ -354,13 +353,13 @@
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex gap-2">
-                                    <button *ngIf="!(job | any)?.isEditing" (click)="editJob(job)" class="text-gray-600 hover:text-blue-600 transition-colors" title="Edit job">
+                                    <button *ngIf="!$any(job).isEditing" (click)="editJob(job)" class="text-gray-600 hover:text-blue-600 transition-colors" title="Edit job">
                                         <i class="pi pi-pencil"></i>
                                     </button>
-                                    <button *ngIf="(job | any)?.isEditing" (click)="saveJob(job)" class="text-green-600 hover:text-green-700 transition-colors" title="Save changes">
+                                    <button *ngIf="$any(job).isEditing" (click)="saveJob(job)" class="text-green-600 hover:text-green-700 transition-colors" title="Save changes">
                                         <i class="pi pi-check"></i>
                                     </button>
-                                    <button *ngIf="(job | any)?.isEditing" (click)="cancelEdit(job)" class="text-gray-600 hover:text-red-600 transition-colors" title="Cancel editing">
+                                    <button *ngIf="$any(job).isEditing" (click)="cancelEdit(job)" class="text-gray-600 hover:text-red-600 transition-colors" title="Cancel editing">
                                         <i class="pi pi-times"></i>
                                     </button>
                                     <button (click)="triggerJob(job, false)" class="text-gray-600 hover:text-green-600 transition-colors" title="Trigger job now">

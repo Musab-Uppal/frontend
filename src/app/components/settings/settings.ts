@@ -11,15 +11,13 @@ import {
     ApiService,
     Rule,
     RuleCreate,
-    RuleOperator,
     CronJob,
     CronJobCreate,
     CronScheduleExample,
     CronExecutionLog,
     LogEntry,
     Preset,
-    PresetCreate,
-    PresetConditionBackend
+    PresetCreate
 } from '../../services/api.service';
 
 interface RuleCondition {
@@ -92,7 +90,7 @@ export class Settings implements OnInit {
     scheduleExamples: CronScheduleExample[] = [];
 
     newJobName = '';
-    newJobSchedule = '0 18 * * 1-5'; // Default: weekdays at 6 PM
+    newJobSchedule = '0 9 * * 1-5'; // Default: weekdays at 9 AM
     newJobActive = true;
 
     // Calendar
@@ -526,7 +524,7 @@ export class Settings implements OnInit {
             next: (res) => {
                 this.messageService.add({ severity: 'success', summary: 'Created', detail: res.message });
                 this.newJobName = '';
-                this.newJobSchedule = '0 18 * * 1-5';
+                this.newJobSchedule = '0 9 * * 1-5';
                 this.newJobActive = true;
                 this.loadCronJobs();
                 this.loadAllLogs();

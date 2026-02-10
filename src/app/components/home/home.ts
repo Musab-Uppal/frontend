@@ -12,7 +12,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
 import { CustomTableComponent, TableColumn, TableRow, TableConfig } from '../custom-table/custom-table.component';
 import { FilterDialogComponent, FilterCondition } from '../filter-dialog/filter-dialog.component';
-import { ApiService, ColorProcessed, SearchFilter } from '../../services/api.service';
+import { ApiService, ColorProcessed, SearchFilter, Rule, RuleConditionBackend } from '../../services/api.service';
 import { StackedChartComponent } from '../stacked-chart/stacked-chart.component';
 
 @Component({
@@ -50,6 +50,14 @@ export class Home implements OnInit {
     isUploading = false;
     selectedFile: File | null = null;
     fileSize: string = '';
+
+    // Run Rules dialog state
+    showRunRulesDialog = false;
+    availableRules: Rule[] = [];
+    selectedRuleIds: Set<number> = new Set();
+    ruleSearchText = '';
+    loadingRules = false;
+    runningRules = false;
 
     // Active filters for display as chips
     activeFilters: FilterCondition[] = [];
@@ -304,7 +312,7 @@ export class Home implements OnInit {
 
     cronJobsAndTime() {
         console.log('⏰ Cron Jobs & Time clicked');
-        window.location.href = '/settings?section=corn-jobs';
+        window.location.href = '/settings?section=cron-jobs';
     }
 
     importViaExcel() {
@@ -470,6 +478,240 @@ export class Home implements OnInit {
             detail: 'All filters removed'
         });
         this.loadDataFromBackend();
+    }
+
+    // ==================== RUN RULES ====================
+
+    openRunRulesDialog() {
+        this.showRunRulesDialog = true;
+        this.ruleSearchText = '';
+        this.selectedRuleIds.clear();
+        this.loadRulesForDialog();
+    }
+
+    loadRulesForDialog() {
+        this.loadingRules = true;
+        this.apiService.getRules().subscribe({
+            next: (response) => {
+                this.availableRules = response.rules;
+                this.availableRules.forEach(rule => {
+                    if (rule.is_active) {
+                        this.selectedRuleIds.add(rule.id);
+                    }
+                });
+                this.loadingRules = false;
+            },
+            error: (error) => {
+                console.error('Error loading rules:', error);
+                this.loadingRules = false;
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Failed to load rules'
+                });
+            }
+        });
+    }
+
+    toggleRuleSelection(ruleId: number) {
+        if (this.selectedRuleIds.has(ruleId)) {
+            this.selectedRuleIds.delete(ruleId);
+        } else {
+            this.selectedRuleIds.add(ruleId);
+        }
+    }
+
+    isRuleSelected(ruleId: number): boolean {
+        return this.selectedRuleIds.has(ruleId);
+    }
+
+    get filteredRules(): Rule[] {
+        if (!this.ruleSearchText.trim()) return this.availableRules;
+        const search = this.ruleSearchText.toLowerCase();
+        return this.availableRules.filter(r => r.name.toLowerCase().includes(search));
+    }
+
+    get allFilteredRulesSelected(): boolean {
+        return this.filteredRules.length > 0 && this.filteredRules.every(r => this.selectedRuleIds.has(r.id));
+    }
+
+    toggleSelectAll() {
+        if (this.allFilteredRulesSelected) {
+            this.filteredRules.forEach(r => this.selectedRuleIds.delete(r.id));
+        } else {
+            this.filteredRules.forEach(r => this.selectedRuleIds.add(r.id));
+        }
+    }
+
+    cancelRunRules() {
+        this.showRunRulesDialog = false;
+    }
+
+    runSelectedRules() {
+        if (this.selectedRuleIds.size === 0) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'No Rules Selected',
+                detail: 'Please select at least one rule to run'
+            });
+            return;
+        }
+
+        if (this.tableData.length === 0) {
+            this.messageService.add({
+                severity: 'warn',
+                summary: 'No Data',
+                detail: 'No data in the table to filter'
+            });
+            return;
+        }
+
+        this.runningRules = true;
+
+        const selectedRules = this.availableRules.filter(r => this.selectedRuleIds.has(r.id));
+        const originalCount = this.tableData.length;
+
+        const filteredData = this.tableData.filter(row => {
+            for (const rule of selectedRules) {
+                if (this.evaluateRule(row, rule)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+
+        const excludedCount = originalCount - filteredData.length;
+        this.tableData = filteredData;
+        this.runningRules = false;
+        this.showRunRulesDialog = false;
+
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Rules Applied',
+            detail: `${selectedRules.length} rule(s) applied. ${excludedCount} row(s) excluded, ${filteredData.length} remaining.`
+        });
+    }
+
+    // Rule evaluation engine (mirrors backend rules_service.py)
+    private evaluateRule(row: any, rule: Rule): boolean {
+        const conditions = rule.conditions || [];
+        if (conditions.length === 0) return false;
+
+        let result: boolean | null = null;
+
+        for (const condition of conditions) {
+            const conditionType = condition.type || 'where';
+            const conditionMatch = this.evaluateCondition(row, condition);
+
+            if (result === null) {
+                result = conditionMatch;
+            } else if (conditionType === 'and') {
+                result = result && conditionMatch;
+            } else if (conditionType === 'or') {
+                result = result || conditionMatch;
+            } else if (conditionType === 'where') {
+                result = conditionMatch;
+            }
+        }
+
+        return result ?? false;
+    }
+
+    private evaluateCondition(row: any, condition: RuleConditionBackend): boolean {
+        const column = condition.column || '';
+        let operator = (condition.operator || '').toLowerCase();
+        const value = condition.value || '';
+        const value2 = condition.value2 || '';
+
+        const operatorMap: { [key: string]: string } = {
+            'equal to': 'equal_to',
+            'not equal to': 'not_equal_to',
+            'less than': 'less_than',
+            'greater than': 'greater_than',
+            'less than equal to': 'less_than_equal_to',
+            'greater than equal to': 'greater_than_equal_to',
+            'between': 'between',
+            'contains': 'contains',
+            'starts with': 'starts_with',
+            'ends with': 'ends_with',
+            'is equal to': 'equal_to',
+            'is not equal to': 'not_equal_to',
+            'equals': 'equal_to',
+            'not_equals': 'not_equal_to',
+            'not_contains': 'not_contains',
+            'does not contain': 'not_contains',
+            'greater_than': 'greater_than',
+            'less_than': 'less_than',
+            'greater_or_equal': 'greater_than_equal_to',
+            'less_or_equal': 'less_than_equal_to'
+        };
+
+        operator = operatorMap[operator] || operator;
+
+        const rowValue = this.getRowValue(row, column);
+        const compareValue = String(value);
+
+        switch (operator) {
+            case 'equal_to': {
+                const numRow = parseFloat(rowValue);
+                const numCmp = parseFloat(compareValue);
+                if (!isNaN(numRow) && !isNaN(numCmp)) return numRow === numCmp;
+                return rowValue.toLowerCase() === compareValue.toLowerCase();
+            }
+            case 'not_equal_to': {
+                const numRow = parseFloat(rowValue);
+                const numCmp = parseFloat(compareValue);
+                if (!isNaN(numRow) && !isNaN(numCmp)) return numRow !== numCmp;
+                return rowValue.toLowerCase() !== compareValue.toLowerCase();
+            }
+            case 'contains':
+                return rowValue.toLowerCase().includes(compareValue.toLowerCase());
+            case 'not_contains':
+                return !rowValue.toLowerCase().includes(compareValue.toLowerCase());
+            case 'starts_with':
+                return rowValue.toLowerCase().startsWith(compareValue.toLowerCase());
+            case 'ends_with':
+                return rowValue.toLowerCase().endsWith(compareValue.toLowerCase());
+            case 'less_than': {
+                const a = parseFloat(rowValue), b = parseFloat(compareValue);
+                return !isNaN(a) && !isNaN(b) && a < b;
+            }
+            case 'greater_than': {
+                const a = parseFloat(rowValue), b = parseFloat(compareValue);
+                return !isNaN(a) && !isNaN(b) && a > b;
+            }
+            case 'less_than_equal_to': {
+                const a = parseFloat(rowValue), b = parseFloat(compareValue);
+                return !isNaN(a) && !isNaN(b) && a <= b;
+            }
+            case 'greater_than_equal_to': {
+                const a = parseFloat(rowValue), b = parseFloat(compareValue);
+                return !isNaN(a) && !isNaN(b) && a >= b;
+            }
+            case 'between': {
+                const rowNum = parseFloat(rowValue);
+                const minVal = parseFloat(compareValue);
+                const maxVal = parseFloat(value2);
+                return !isNaN(rowNum) && !isNaN(minVal) && !isNaN(maxVal) && minVal <= rowNum && rowNum <= maxVal;
+            }
+            default:
+                return false;
+        }
+    }
+
+    private getRowValue(row: any, column: string): string {
+        const lowerCol = column.toLowerCase();
+
+        for (const key of Object.keys(row)) {
+            if (key.toLowerCase() === lowerCol) return String(row[key] ?? '');
+        }
+
+        const camelCase = lowerCol.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+        for (const key of Object.keys(row)) {
+            if (key.toLowerCase() === camelCase.toLowerCase()) return String(row[key] ?? '');
+        }
+
+        return '';
     }
 
     // ==================== HELPERS ====================

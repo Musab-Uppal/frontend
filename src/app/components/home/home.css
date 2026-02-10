@@ -113,6 +113,29 @@
     overflow-y: hidden;
 }
 
+/* Run Rules Dialog */
+:host ::ng-deep .run-rules-dialog .p-dialog {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+:host ::ng-deep .run-rules-dialog .p-dialog-header {
+    padding: 16px 24px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+:host ::ng-deep .run-rules-dialog .p-dialog-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111827;
+}
+
+:host ::ng-deep .run-rules-dialog .p-dialog-content {
+    padding: 20px 24px;
+    background: #ffffff;
+}
+
 /* Hide main content when table is expanded */
 .fixed.inset-0 {
     z-index: 40;
