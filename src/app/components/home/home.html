@@ -13,7 +13,17 @@
 
                 letter-spacing: -0.02em;
                 }
+               .action-buttons-panel button {
+                font-family: 'Degular Display', 'Poppins', sans-serif;
+                font-size: 18px;
+                font-weight: 500;
+                letter-spacing: -0.02em;
+                }
 
+                .search-message-input::placeholder {
+                font-family: 'Poppins', sans-serif !important;
+                letter-spacing: 0 !important;
+                }
 </style>
 <p-toast position="top-right"></p-toast>
 <div class="min-h-screen">
@@ -43,7 +53,7 @@
                         </div>
                     </p-card>
                 </div>
-                <div class="xl:col-span-4">
+                <div class="xl:col-span-5">
                     <p-card class="!shadow-sm !border-gray-200 !rounded-[20px] w-full h-full">
                         <!-- HEADER -->
                         <div class="px-5 pt-4">
@@ -60,18 +70,18 @@
                 </div>
 
                 <!-- ================= RIGHT PANEL ================= -->
-                <div class="xl:col-span-3">
-                    <div class="rounded-[22px] h-full flex flex-col">
+                <div class="w-auto xl:col-span-2 2xl:col-span-2">
+                    <div class="rounded-[22px] h-full flex flex-col action-buttons-panel">
                         <!-- Top dark grouped actions -->
                         <div class="bg-white rounded-[20px] mb-3 flex flex-col gap-3">
                             <div class="bg-[#1c233a] rounded-[20px] overflow-hidden">
                                 <button pButton label="Refresh Colors Now" (click)="refreshColors()"
-                                    class="w-full !bg-transparent hover:!bg-white/5 !text-white !rounded-none !py-4 !text-sm font-semibold"></button>
+                                    class="w-full !bg-transparent hover:!bg-white/5 !text-white !rounded-none !py-4 !text-[18px] font-semibold"></button>
 
                                 <div class="h-px bg-white/10"></div>
 
                                 <button pButton label="Override & Run" (click)="overrideAndRun()"
-                                    class="w-full !bg-transparent hover:!bg-white/5 !text-white !rounded-none !py-4 !text-sm font-semibold"></button>
+                                    class="w-full !bg-transparent hover:!bg-white/5 !text-white !rounded-none !py-4 !text-[18px] font-semibold"></button>
                             </div>
                             <div class="py-0.5 text-center text-xs text-gray-500">
                                 Next Run in
@@ -108,7 +118,7 @@
                 <!-- Search -->
                 <div class="relative w-full sm:w-64">
                     <input pInputText type="text" placeholder="Search Message ID"
-                        class="w-full !rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100" />
+                        class="search-message-input w-full !rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-800 !border !border-gray-300 hover:!bg-gray-100 placeholder:!text-[14px] placeholder:tracking-normal" />
                     <i
                         class="pi pi-search absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                 </div>
@@ -143,9 +153,9 @@
                     </div>
                 </div>
             </div>
-
+            <hr>
             <!-- Active Filters -->
-            <div class="flex flex-wrap items-center gap-3 mt-5">
+            <div class="flex flex-wrap items-center gap-3 mt-[-5px] mb-[-5px]">
                 <!-- Dynamic Filter Chips -->
                 <div *ngFor="let filter of activeFilters; let i = index"
                     class="flex items-center gap-3 px-5 py-2.5 rounded-full bg-gray-100 text-gray-900 border border-gray-200">
@@ -176,7 +186,7 @@
         </div>
 
         <!-- ================= TABULATOR TABLE ================= -->
-        <div class="relative">
+        <div class="relative font-poppins">
             <app-custom-table
                 #mainTable
                 [columns]="tableColumns"

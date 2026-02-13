@@ -8,6 +8,7 @@
     --breakpoint-lg: 992px;
     --breakpoint-xl: 1200px;
     --breakpoint-2xl: 1920px;
+    --font-poppins: 'Poppins', sans-serif;
 }
 
 /* PrimeNG Theme Override - Remove ALL Green Colors */

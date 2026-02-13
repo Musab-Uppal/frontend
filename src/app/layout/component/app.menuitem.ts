@@ -68,6 +68,13 @@ interface MenuItemWithSvg extends MenuItem {
                 height: 1.25rem;
                 object-fit: contain;
             }
+            .layout-menuitem-text
+            {
+                font-family: 'Degular Display', 'Poppins', sans-serif;
+                font-size: 16px;
+                font-weight: 500;
+            }
+
         `
     ],
     animations: [
