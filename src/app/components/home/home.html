@@ -7,7 +7,7 @@
             <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-stretch">
                 <!-- ================= AVAILABLE COLORS ================= -->
 
-                <div class="xl:col-span-5">
+                <div class="xl:col-span-6">
                     <p-card class="!shadow-sm !border-gray-200 !rounded-[20px] w-full h-full">
                         <!-- HEADER -->
                         <div class="flex items-center justify-between px-5 pt-4">
@@ -43,40 +43,40 @@
                 </div>
 
                 <!-- ================= RIGHT PANEL ================= -->
-                <div class="xl:col-span-3">
-                    <div class="rounded-[22px] h-full flex flex-col">
+                <div class="xl:col-span-2">
+                    <div class="rounded-[22px] h-full flex flex-col gap-2">
                         <!-- Top dark grouped actions -->
-                        <div class="bg-white rounded-[20px] mb-3 flex flex-col gap-3">
+                        <div class="bg-white rounded-[20px] flex flex-col gap-2">
                             <div class="bg-[#1c233a] rounded-[20px] overflow-hidden">
                                 <button pButton label="Refresh Colors Now" (click)="refreshColors()"
-                                    class="w-full !bg-transparent hover:!bg-white/5 !text-white !rounded-none !py-4 !text-sm font-semibold"></button>
+                                    class="w-full !bg-transparent hover:!bg-white/5 !text-white !rounded-none !py-3.5 !text-sm font-semibold"></button>
 
                                 <div class="h-px bg-white/10"></div>
 
                                 <button pButton label="Override & Run" (click)="overrideAndRun()"
-                                    class="w-full !bg-transparent hover:!bg-white/5 !text-white !rounded-none !py-4 !text-sm font-semibold"></button>
+                                    class="w-full !bg-transparent hover:!bg-white/5 !text-white !rounded-none !py-3.5 !text-sm font-semibold"></button>
                             </div>
-                            <div class="py-0.5 text-center text-xs text-gray-500">
+                            <div class="py-0 text-center text-sm text-gray-500">
                                 Next Run in
-                                <span class="font-mono font-semibold text-gray-900"> {{ nextRunTimer }} </span>
+                                <span class="font-mono font-bold text-gray-900"> {{ nextRunTimer }} </span>
                             </div>
                         </div>
 
                         <!-- Bottom actions card -->
-                        <div class="px-1 flex-1">
-                            <div class="bg-white rounded-[18px] overflow-hidden shadow-sm">
+                        <div class="flex-1 flex flex-col">
+                            <div class="bg-white rounded-[18px] overflow-hidden shadow-sm flex-1 flex flex-col">
                                 <button pButton icon="pi pi-upload" label="Import Sample" (click)="importSample()"
-                                    class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
+                                    class="w-full flex-1 !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 justify-start font-bold"></button>
 
                                 <button pButton icon="pi pi-sliders-h" label="Rules & Presets"
                                     (click)="rulesAndPresets()"
-                                    class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
+                                    class="w-full flex-1 !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 justify-start font-bold"></button>
 
                                 <button pButton icon="pi pi-history" label="Restore last run" (click)="restoreLastRun()"
-                                    class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
+                                    class="w-full flex-1 !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 justify-start font-bold"></button>
 
                                 <button pButton icon="pi pi-clock" label="Cron Jobs & Time" (click)="cronJobsAndTime()"
-                                    class="w-full !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 !py-4 justify-start"></button>
+                                    class="w-full flex-1 !bg-white !text-gray-700 hover:!bg-gray-50 !rounded-none !border-b !border-gray-100 justify-start font-bold"></button>
                             </div>
                         </div>
                     </div>
@@ -96,11 +96,8 @@
                         class="pi pi-search absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                 </div>
 
-                <!-- Filters, Rules & Import -->
+                <!-- Filters & Import -->
                 <div class="flex flex-wrap gap-3">
-                    <button pButton icon="pi pi-cog" label="Run Rules" (click)="openRunRulesDialog()"
-                        class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"></button>
-
                     <button pButton icon="pi pi-filter" label="Filters" (click)="showFilterDialog()"
                         class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"></button>
 
@@ -111,12 +108,8 @@
                 <!-- Spacer -->
                 <div class="flex-1"></div>
 
-                <!-- Export / Count / Fetch -->
+                <!-- Count -->
                 <div class="flex items-center gap-3 flex-wrap">
-                    <!-- Export - Dynamic label -->
-                    <button pButton icon="pi pi-download" [label]="getExportButtonLabel()" (click)="exportAll()"
-                        class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"></button>
-
                     <!-- Total Count -->
                     <div
                         class="flex items-center gap-3 px-5 py-2.5 rounded-full border border-gray-300 bg-gray-50 text-gray-700 font-medium">
@@ -124,6 +117,7 @@
                         <span class="px-3 py-0.5 bg-white rounded-full shadow text-sm font-semibold"> {{
                             tableData.length }} </span>
                     </div>
+
                 </div>
             </div>
 
@@ -200,11 +194,8 @@
                             class="pi pi-search absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
                     </div>
 
-                    <!-- Filters, Rules & Import -->
+                    <!-- Filters & Import -->
                     <div class="flex flex-wrap gap-3">
-                        <button pButton icon="pi pi-cog" label="Run Rules" (click)="openRunRulesDialog()"
-                            class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"></button>
-
                         <button pButton icon="pi pi-filter" label="Filters" (click)="showFilterDialog()"
                             class="!rounded-full !px-5 !py-2.5 !bg-gray-50 !text-gray-700 !border !border-gray-300 hover:!bg-gray-100"></button>
 
@@ -215,7 +206,7 @@
                     <!-- Spacer -->
                     <div class="flex-1"></div>
 
-                    <!-- Export / Count / Fetch -->
+                    <!-- Export / Count / Run Automation -->
                     <div class="flex items-center gap-3 flex-wrap">
                         <!-- Export - Dynamic label -->
                         <button pButton icon="pi pi-download" [label]="getExportButtonLabel()" (click)="exportAll()"
@@ -228,6 +219,7 @@
                             <span class="px-3 py-0.5 bg-white rounded-full shadow text-sm font-semibold"> {{
                                 tableData.length }} </span>
                         </div>
+
                     </div>
                 </div>
 
@@ -273,7 +265,8 @@
                 primaryField="messageId"
                 (dataChanged)="onTableDataChanged($event)"
                 (rowsSelected)="onTableRowsSelected($event)"
-                (primaryFieldLookup)="onMessageIdLookup($event)">
+                (primaryFieldLookup)="onMessageIdLookup($event)"
+                (onExpandButtonClick)="toggleTableExpansion()">
             </app-custom-table>
         </div>
     </div>
@@ -381,6 +374,18 @@
         class="run-rules-dialog">
 
         <div class="run-rules-content">
+            <!-- Preset Loader -->
+            <div class="mb-4">
+                <label class="text-xs font-medium text-gray-500 mb-1 block">Load Preset</label>
+                <select [(ngModel)]="selectedPresetId" (ngModelChange)="$event && applyPreset($event)"
+                    class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    <option [ngValue]="null">-- Select a preset --</option>
+                    <option *ngFor="let preset of availablePresets" [ngValue]="preset.id">
+                        {{ preset.name }} ({{ preset.conditions.length }} filters)
+                    </option>
+                </select>
+            </div>
+
             <!-- Search -->
             <div class="relative mb-4">
                 <input

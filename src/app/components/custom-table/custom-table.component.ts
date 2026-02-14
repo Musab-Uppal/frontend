@@ -31,6 +31,8 @@ export interface TableConfig {
   showRowNumbers: boolean;
   pagination?: boolean;
   pageSize?: number;
+  showExport?: boolean;
+  showAddRow?: boolean;
 }
 
 @Component({

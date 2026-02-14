@@ -90,12 +90,14 @@ export class Home implements OnInit {
     ];
 
     tableConfig: TableConfig = {
-        editable: true,
+        editable: false,
         selectable: true,
         showSelectButton: true,
         showRowNumbers: true,
         pagination: true,
-        pageSize: 20
+        pageSize: 20,
+        showExport: false,
+        showAddRow: false
     };
 
     constructor(
@@ -767,10 +769,13 @@ export class Home implements OnInit {
         this.runningRules = false;
         this.showRunRulesDialog = false;
 
+        // Save snapshot after rules applied
+        this.apiService.createBackup('Rules run - ' + new Date().toISOString()).subscribe();
+
         this.messageService.add({
             severity: 'success',
             summary: 'Rules Applied',
-            detail: `${selectedRules.length} rule(s) applied. ${excludedCount} row(s) excluded, ${filteredData.length} remaining.`
+            detail: `${selectedRules.length} rule(s) applied. ${excludedCount} row(s) excluded, ${filteredData.length} remaining. Data saved.`
         });
     }
 

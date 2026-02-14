@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ViewChildren, QueryList } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
 import { FileUploadModule } from 'primeng/fileupload';
@@ -11,7 +11,7 @@ import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { CustomTableComponent, TableColumn, TableRow, TableConfig } from '../custom-table/custom-table.component';
 import { FilterDialogComponent, FilterCondition } from '../filter-dialog/filter-dialog.component';
-import { ApiService, SearchFilter, Rule, RuleConditionBackend } from '../../services/api.service';
+import { ApiService, SearchFilter, Rule, RuleConditionBackend, Preset } from '../../services/api.service';
 
 @Component({
   selector: 'app-manual-color',
@@ -35,6 +35,7 @@ import { ApiService, SearchFilter, Rule, RuleConditionBackend } from '../../serv
 })
 export class ManualColor implements OnInit {
   @ViewChild('fileInputRef') fileInputRef!: ElementRef<HTMLInputElement>;
+  @ViewChild('manualTable') manualTable!: any;
 
   searchText = '';
   showImportDialog = false;
@@ -53,11 +54,26 @@ export class ManualColor implements OnInit {
   loadingRules = false;
   runningRules = false;
 
+  // Run Automation state
+  showAutomationMenu = false;
+  runningAutomation = false;
+
+  // Presets state
+  availablePresets: Preset[] = [];
+  selectedPresetId: number | null = null;
+  loadingPresets = false;
+
   // Session management
   currentSessionId: string | null = null;
 
   // Undo history
   private undoStack: TableRow[][] = [];
+
+  // Sorting state
+  showSortDialog = false;
+  sortField: string = 'date';
+  sortDirection: 'asc' | 'desc' = 'desc';
+  activeSortLabel: string = '';
 
   // Active filters for display as chips
   activeFilters: FilterCondition[] = [];
@@ -85,7 +101,9 @@ export class ManualColor implements OnInit {
     showSelectButton: true,
     showRowNumbers: true,
     pagination: false,
-    pageSize: 20
+    pageSize: 20,
+    showExport: false,
+    showAddRow: false
   };
 
   constructor(
@@ -95,6 +113,7 @@ export class ManualColor implements OnInit {
 
   ngOnInit() {
     console.log('🚀 Manual Color component initialized');
+    this.loadPresets();
   }
 
   // ==================== FILE UPLOAD ====================
@@ -335,7 +354,9 @@ export class ManualColor implements OnInit {
     this.showRunRulesDialog = true;
     this.ruleSearchText = '';
     this.selectedRuleIds.clear();
+    this.selectedPresetId = null;
     this.loadRules();
+    this.loadPresets();
   }
 
   loadRules() {
@@ -437,73 +458,189 @@ export class ManualColor implements OnInit {
     this.runningRules = false;
     this.showRunRulesDialog = false;
 
+    // Save snapshot after rules applied
+    this.apiService.createBackup('Rules run - ' + new Date().toISOString()).subscribe();
+
     this.messageService.add({
       severity: 'success',
       summary: 'Rules Applied',
-      detail: `${selectedRules.length} rule(s) applied. ${excludedCount} row(s) excluded, ${filteredData.length} remaining.`
+      detail: `${selectedRules.length} rule(s) applied. ${excludedCount} row(s) excluded, ${filteredData.length} remaining. Data saved.`
     });
   }
 
   /**
-   * Run all active rules automatically (Run Automation button)
+   * Run automation with two modes:
+   * - override=false: Apply all active rules client-side + save
+   * - override=true: Override cron schedule and trigger server-side automation
    */
-  runAutomation() {
-    if (this.tableData.length === 0) {
+  runAutomation(override: boolean = false) {
+    this.showAutomationMenu = false;
+
+    if (override) {
+      this.runningAutomation = true;
       this.messageService.add({
-        severity: 'warn',
-        summary: 'No Data',
-        detail: 'Please import data first'
+        severity: 'info',
+        summary: 'Override & Run',
+        detail: 'Overriding cron schedule and running automation...'
       });
-      return;
+
+      this.apiService.getActiveCronJobs().subscribe({
+        next: (response) => {
+          if (response.jobs.length === 0) {
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'No Active Jobs',
+              detail: 'No active cron jobs found to override'
+            });
+            this.runningAutomation = false;
+            return;
+          }
+
+          const job = response.jobs[0];
+          this.apiService.triggerCronJob(job.id, true).subscribe({
+            next: (res) => {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Automation Complete',
+                detail: res.message || 'Cron job overridden and executed'
+              });
+              this.runningAutomation = false;
+            },
+            error: (err) => {
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: err.error?.detail || 'Failed to trigger automation'
+              });
+              this.runningAutomation = false;
+            }
+          });
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to fetch active cron jobs'
+          });
+          this.runningAutomation = false;
+        }
+      });
+    } else {
+      if (this.tableData.length === 0) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'No Data',
+          detail: 'Please import data first'
+        });
+        return;
+      }
+
+      this.runningAutomation = true;
+      this.messageService.add({
+        severity: 'info',
+        summary: 'Processing',
+        detail: 'Running all active rules...'
+      });
+
+      this.apiService.getActiveRules().subscribe({
+        next: (response) => {
+          const activeRules = response.rules;
+          if (activeRules.length === 0) {
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'No Active Rules',
+              detail: 'No active rules found. Go to Settings to configure rules.'
+            });
+            this.runningAutomation = false;
+            return;
+          }
+
+          this.saveUndoState();
+          const originalCount = this.tableData.length;
+
+          const filteredData = this.tableData.filter(row => {
+            for (const rule of activeRules) {
+              if (this.evaluateRule(row, rule)) {
+                return false;
+              }
+            }
+            return true;
+          });
+
+          const excludedCount = originalCount - filteredData.length;
+          this.tableData = filteredData;
+
+          // Save snapshot after automation
+          this.apiService.createBackup('Automation run - ' + new Date().toISOString()).subscribe({
+            next: () => {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Automation Complete',
+                detail: `${activeRules.length} rule(s) applied. ${excludedCount} row(s) excluded, ${filteredData.length} remaining. Data saved.`
+              });
+            },
+            error: () => {
+              this.messageService.add({
+                severity: 'success',
+                summary: 'Automation Complete',
+                detail: `${activeRules.length} rule(s) applied. ${excludedCount} row(s) excluded, ${filteredData.length} remaining.`
+              });
+            }
+          });
+
+          this.runningAutomation = false;
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to fetch active rules'
+          });
+          this.runningAutomation = false;
+        }
+      });
     }
+  }
+
+  // ==================== PRESETS ====================
+
+  loadPresets() {
+    this.loadingPresets = true;
+    this.apiService.getPresets().subscribe({
+      next: (response) => {
+        this.availablePresets = response.presets;
+        this.presetCount = response.presets.length;
+        this.loadingPresets = false;
+      },
+      error: () => {
+        this.loadingPresets = false;
+      }
+    });
+  }
+
+  applyPreset(presetId: number) {
+    const preset = this.availablePresets.find(p => p.id === presetId);
+    if (!preset) return;
+
+    this.selectedPresetId = presetId;
+
+    const filters: FilterCondition[] = preset.conditions.map(c => ({
+      column: c.column,
+      operator: c.operator,
+      values: c.value,
+      values2: c.value2 || '',
+      columnDisplay: c.column,
+      operatorDisplay: c.operator,
+      logicalOperator: 'AND' as const
+    }));
+
+    this.activeFilters = filters;
+    this.onFiltersApplied({ conditions: filters, subgroups: [] });
 
     this.messageService.add({
-      severity: 'info',
-      summary: 'Processing',
-      detail: 'Running all active rules...'
-    });
-
-    this.apiService.getActiveRules().subscribe({
-      next: (response) => {
-        const activeRules = response.rules;
-        if (activeRules.length === 0) {
-          this.messageService.add({
-            severity: 'warn',
-            summary: 'No Active Rules',
-            detail: 'No active rules found. Go to Settings to configure rules.'
-          });
-          return;
-        }
-
-        this.saveUndoState();
-        const originalCount = this.tableData.length;
-
-        const filteredData = this.tableData.filter(row => {
-          for (const rule of activeRules) {
-            if (this.evaluateRule(row, rule)) {
-              return false;
-            }
-          }
-          return true;
-        });
-
-        const excludedCount = originalCount - filteredData.length;
-        this.tableData = filteredData;
-
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Automation Complete',
-          detail: `${activeRules.length} active rule(s) applied. ${excludedCount} row(s) excluded, ${filteredData.length} remaining.`
-        });
-      },
-      error: (error) => {
-        console.error('Error running automation:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to fetch active rules'
-        });
-      }
+      severity: 'success',
+      summary: 'Preset Loaded',
+      detail: `Loaded preset "${preset.name}" with ${preset.conditions.length} filter(s)`
     });
   }
 
