@@ -269,29 +269,42 @@
 
             <!-- Job Creation Form -->
             <div class="rounded-lg mb-4">
-                <div class="grid grid-cols-12 gap-4 mb-4">
-                    <div class="col-span-12 md:col-span-4">
+                <div class="grid grid-cols-12 gap-3 items-end mb-4">
+                    <!-- Job Name -->
+                    <div class="col-span-12 md:col-span-3">
                         <label class="text-xs text-gray-600 mb-1 block">Job name</label>
                         <input type="text" [(ngModel)]="newJobName" placeholder="US CLO N1000 Batch" class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
-                    <div class="col-span-12 md:col-span-4">
-                        <label class="text-xs text-gray-600 mb-1 block">Cron Schedule</label>
-                        <input type="text" [(ngModel)]="newJobSchedule" placeholder="0 9 * * 1-5" list="scheduleOptions" class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                        <datalist id="scheduleOptions">
-                            <option *ngFor="let ex of scheduleExamples" [value]="ex.expression">{{ ex.description }}</option>
-                        </datalist>
-                        <p class="text-xs text-gray-400 mt-1" *ngIf="newJobSchedule">{{ getScheduleDescription(newJobSchedule) }}</p>
+                    <!-- Time (GMT) -->
+                    <div class="col-span-6 md:col-span-2">
+                        <label class="text-xs text-gray-600 mb-1 block">Time (GMT)</label>
+                        <input type="time" [(ngModel)]="newJobTime" class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
-                    <div class="col-span-12 md:col-span-2">
-                        <label class="text-xs text-gray-600 mb-1 block">Active</label>
+                    <!-- Frequency (Day-of-week buttons) -->
+                    <div class="col-span-12 md:col-span-4">
+                        <label class="text-xs text-gray-600 mb-1 block">Frequency</label>
+                        <div class="flex gap-1">
+                            <button
+                                *ngFor="let label of dayLabels; let i = index"
+                                (click)="toggleDay(i)"
+                                class="w-8 h-8 rounded-md text-xs font-semibold flex items-center justify-center transition-all cursor-pointer border"
+                                [ngClass]="newJobDays[i] ? 'bg-gray-700 text-white border-gray-700' : 'bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200'">
+                                {{ label }}
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Repeat -->
+                    <div class="col-span-6 md:col-span-1">
+                        <label class="text-xs text-gray-600 mb-1 block">Repeat</label>
                         <div class="relative">
-                            <select [(ngModel)]="newJobActive" class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
+                            <select [(ngModel)]="newJobRepeat" class="w-full px-2 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none">
                                 <option [ngValue]="true">Yes</option>
                                 <option [ngValue]="false">No</option>
                             </select>
-                            <i class="pi pi-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                            <i class="pi pi-chevron-down absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
                         </div>
                     </div>
+                    <!-- Add Button -->
                     <div class="col-span-12 md:col-span-2 flex items-end">
                         <button
                             (click)="addJob()"
@@ -317,13 +330,13 @@
 
             <!-- Jobs Table (dynamic from backend) -->
             <div class="overflow-x-auto" *ngIf="!loadingCronJobs">
-                <table class="w-full min-w-[800px]">
+                <table class="w-full min-w-[700px]">
                     <thead class="border-b border-gray-200">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">Job Name</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">Schedule</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">Active</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">Next Run</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">Time</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">Frequency</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">Repeat</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-600">Actions</th>
                         </tr>
                     </thead>
@@ -332,44 +345,56 @@
                             <td colspan="5" class="px-4 py-6 text-center text-sm text-gray-500">No cron jobs found. Create one above.</td>
                         </tr>
                         <tr *ngFor="let job of cronJobs" class="border-b border-gray-100 hover:bg-gray-50 transition-colors" [class.bg-blue-50]="$any(job).isEditing">
+                            <!-- Job Name -->
                             <td class="px-4 py-3 text-sm text-gray-900">
                                 <span *ngIf="!$any(job).isEditing">{{ job.name }}</span>
                                 <input *ngIf="$any(job).isEditing" [(ngModel)]="job.name" class="w-full px-2 py-1 border border-gray-300 rounded text-sm" />
                             </td>
+                            <!-- Time (parsed from cron) -->
                             <td class="px-4 py-3 text-sm text-gray-900">
-                                <span *ngIf="!$any(job).isEditing" class="text-xs bg-gray-100 px-2 py-1 rounded font-mono">{{ job.schedule }}</span>
-                                <input *ngIf="$any(job).isEditing" [(ngModel)]="job.schedule" class="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono" />
+                                <span *ngIf="!$any(job).isEditing">{{ parseJobTime(job) }}</span>
+                                <input *ngIf="$any(job).isEditing" [(ngModel)]="job.schedule" class="w-full px-2 py-1 border border-gray-300 rounded text-sm font-mono" placeholder="M H * * D" />
                             </td>
+                            <!-- Frequency (day boxes with status colors) -->
                             <td class="px-4 py-3">
-                                <button
-                                    (click)="toggleJobActive(job)"
-                                    class="px-3 py-1 rounded-full text-xs font-medium transition-colors"
-                                    [ngClass]="job.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'">
-                                    {{ job.is_active ? 'Active' : 'Inactive' }}
-                                </button>
+                                <div class="flex gap-1.5">
+                                    <span
+                                        *ngFor="let active of parseJobDays(job); let i = index"
+                                        class="w-8 h-8 rounded-md text-xs font-bold flex items-center justify-center cursor-help"
+                                        [ngClass]="active ? getStatusColor(getJobDayStatus(job, i)) + ' text-white' : 'bg-gray-100 text-gray-400'"
+                                        [pTooltip]="active ? (dayLabels[i] + ': ' + getJobDayStatus(job, i)) : (dayLabels[i] + ': not scheduled')"
+                                        tooltipPosition="top">
+                                        {{ dayLabels[i] }}
+                                    </span>
+                                </div>
                             </td>
-                            <td class="px-4 py-3 text-xs text-gray-600">
-                                {{ job.next_run ? formatDate(job.next_run) : 'N/A' }}
+                            <!-- Repeat (dropdown style) -->
+                            <td class="px-4 py-3 text-sm">
+                                <div class="relative inline-block">
+                                    <select
+                                        [ngModel]="job.is_active"
+                                        (ngModelChange)="job.is_active = $event; saveJob(job)"
+                                        class="pl-2 pr-6 py-1 bg-white border border-gray-300 rounded text-sm appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                        <option [ngValue]="true">Yes</option>
+                                        <option [ngValue]="false">No</option>
+                                    </select>
+                                    <i class="pi pi-chevron-down absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                                </div>
                             </td>
+                            <!-- Actions (pencil + trash) -->
                             <td class="px-4 py-3">
-                                <div class="flex gap-2">
-                                    <button *ngIf="!$any(job).isEditing" (click)="editJob(job)" class="text-gray-600 hover:text-blue-600 transition-colors" title="Edit job">
-                                        <i class="pi pi-pencil"></i>
+                                <div class="flex gap-4">
+                                    <button *ngIf="!$any(job).isEditing" (click)="editJob(job)" class="text-gray-500 hover:text-gray-800 transition-colors" title="Edit job">
+                                        <i class="pi pi-pencil text-base"></i>
                                     </button>
                                     <button *ngIf="$any(job).isEditing" (click)="saveJob(job)" class="text-green-600 hover:text-green-700 transition-colors" title="Save changes">
-                                        <i class="pi pi-check"></i>
+                                        <i class="pi pi-check text-base"></i>
                                     </button>
                                     <button *ngIf="$any(job).isEditing" (click)="cancelEdit(job)" class="text-gray-600 hover:text-red-600 transition-colors" title="Cancel editing">
-                                        <i class="pi pi-times"></i>
+                                        <i class="pi pi-times text-base"></i>
                                     </button>
-                                    <button (click)="triggerJob(job, false)" class="text-gray-600 hover:text-green-600 transition-colors" title="Trigger job now">
-                                        <i class="pi pi-play"></i>
-                                    </button>
-                                    <button (click)="triggerJob(job, true)" class="text-gray-600 hover:text-orange-600 transition-colors" title="Trigger with override (cancel next scheduled run)">
-                                        <i class="pi pi-bolt"></i>
-                                    </button>
-                                    <button (click)="deleteJob(job)" class="text-gray-600 hover:text-red-600 transition-colors" title="Delete job">
-                                        <i class="pi pi-trash"></i>
+                                    <button (click)="deleteJob(job)" class="text-gray-500 hover:text-red-600 transition-colors" title="Delete job">
+                                        <i class="pi pi-trash text-base"></i>
                                     </button>
                                 </div>
                             </td>
@@ -389,9 +414,9 @@
                 <div class="flex flex-wrap gap-2 text-xs">
                     <span class="flex items-center gap-1 cursor-help" title="Successful executions"> <span class="w-2 h-2 bg-green-500 rounded-full"></span> Success </span>
                     <span class="flex items-center gap-1 cursor-help" title="Failed executions"> <span class="w-2 h-2 bg-red-500 rounded-full"></span> Error </span>
-                    <span class="flex items-center gap-1 cursor-help" title="Skipped executions"> <span class="w-2 h-2 bg-blue-500 rounded-full"></span> Skipped </span>
-                    <span class="flex items-center gap-1 cursor-help" title="Manual overrides"> <span class="w-2 h-2 bg-blue-400 rounded-full"></span> Override </span>
-                    <span class="flex items-center gap-1 cursor-help" title="Pending executions"> <span class="w-2 h-2 bg-yellow-500 rounded-full"></span> Not yet started </span>
+                    <span class="flex items-center gap-1 cursor-help" title="Manual overrides"> <span class="w-2 h-2 bg-blue-500 rounded-full"></span> Overridden </span>
+                    <span class="flex items-center gap-1 cursor-help" title="Skipped executions"> <span class="w-2 h-2 bg-yellow-500 rounded-full"></span> Skipped </span>
+                    <span class="flex items-center gap-1 cursor-help" title="Upcoming executions"> <span class="w-2 h-2 bg-amber-400 rounded-full"></span> Upcoming </span>
                 </div>
             </div>
             <p class="text-sm text-gray-600 mb-4">View automation schedule and status</p>
@@ -406,6 +431,16 @@
                         <h3 class="text-lg font-semibold text-gray-900">{{ currentMonth }}</h3>
                         <button (click)="navigateCalendar('next')" class="p-1 hover:bg-gray-100 rounded transition-colors" title="Next month">
                             <i class="pi pi-chevron-right"></i>
+                        </button>
+                    </div>
+                    <!-- View tabs -->
+                    <div class="flex bg-gray-100 rounded-lg p-0.5">
+                        <button
+                            *ngFor="let view of ['month', 'week', 'day', 'list']"
+                            (click)="calendarView = $any(view)"
+                            class="px-3 py-1 text-xs font-medium rounded-md transition-colors capitalize"
+                            [ngClass]="calendarView === view ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'">
+                            {{ view }}
                         </button>
                     </div>
                 </div>
@@ -507,11 +542,11 @@
                             </td>
                             <td class="px-4 py-3">
                                 <div class="flex gap-2">
-                                    <button (click)="sendEmail(item.details)" class="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors" title="Send Email">
+                                    <button (click)="sendEmail(item)" class="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1 transition-colors" title="Send Email">
                                         <i class="pi pi-envelope"></i>
                                         Send Email
                                     </button>
-                                    <button (click)="removeData(item.details)" class="text-sm text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors" title="Remove Data">
+                                    <button (click)="removeData(item)" class="text-sm text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors" title="Remove Data">
                                         <i class="pi pi-trash"></i>
                                         Remove Data
                                     </button>

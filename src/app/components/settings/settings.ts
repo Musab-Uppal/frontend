@@ -43,6 +43,7 @@ interface CalendarEvent {
 }
 
 interface RestoreData {
+    id?: number;
     details: string;
     date: string;
     time: string;
@@ -90,10 +91,13 @@ export class Settings implements OnInit {
     scheduleExamples: CronScheduleExample[] = [];
 
     newJobName = '';
-    newJobSchedule = '0 9 * * 1-5'; // Default: weekdays at 9 AM
-    newJobActive = true;
+    newJobTime = '18:30';  // 24h format for <input type="time">
+    newJobDays: boolean[] = [false, true, true, true, true, true, false]; // S M T W T F S
+    newJobRepeat = true;   // Yes = weekly recurring
+    dayLabels: string[] = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
     // Calendar
+    calendarView: 'month' | 'week' | 'day' | 'list' = 'month';
     weekDays: string[] = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
     currentMonth = '';
     currentYear = 0;
@@ -254,19 +258,34 @@ export class Settings implements OnInit {
 
     loadRestoreData() {
         this.loadingRestoreData = true;
-        this.apiService.getCronExecutionLogs(10).subscribe({
+        this.apiService.getBackupHistory(10).subscribe({
             next: (res) => {
-                this.restoreData = res.logs.map(log => ({
-                    details: log.job_name,
-                    date: new Date(log.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                    time: new Date(log.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-                    process: log.triggered_by === 'manual' ? 'Manual' : 'Automated'
+                this.restoreData = res.backups.map((backup: any) => ({
+                    id: backup.id,
+                    details: backup.description || `Backup #${backup.id}`,
+                    date: new Date(backup.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                    time: new Date(backup.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                    process: backup.backup_type === 'auto' ? 'Automated' : 'Manual'
                 }));
                 this.loadingRestoreData = false;
             },
-            error: (err) => {
-                console.error('Error loading restore data:', err);
-                this.loadingRestoreData = false;
+            error: () => {
+                // Fallback: use cron execution logs if backup endpoint not available
+                this.apiService.getCronExecutionLogs(10).subscribe({
+                    next: (res) => {
+                        this.restoreData = res.logs.map(log => ({
+                            details: log.job_name,
+                            date: new Date(log.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                            time: new Date(log.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                            process: log.triggered_by === 'manual' ? 'Manual' : 'Automated'
+                        }));
+                        this.loadingRestoreData = false;
+                    },
+                    error: (err) => {
+                        console.error('Error loading restore data:', err);
+                        this.loadingRestoreData = false;
+                    }
+                });
             }
         });
     }
@@ -503,29 +522,108 @@ export class Settings implements OnInit {
 
     // ==================== CRON JOBS CRUD ====================
 
+    toggleDay(index: number): void {
+        this.newJobDays[index] = !this.newJobDays[index];
+    }
+
+    /** Build cron expression from time + day selection */
+    buildCronFromUI(): string {
+        const [h, m] = this.newJobTime.split(':').map(Number);
+        const selectedDays = this.newJobDays.map((sel, i) => sel ? i : -1).filter(d => d >= 0);
+        const dayStr = selectedDays.length > 0 ? selectedDays.join(',') : '*';
+        return `${m} ${h} * * ${dayStr}`;
+    }
+
+    /** Parse cron expression to time string (e.g., "6:30 PM") */
+    parseJobTime(job: CronJob): string {
+        if (!job.schedule) return '';
+        const parts = job.schedule.split(' ');
+        if (parts.length < 5) return job.schedule;
+        const h = parseInt(parts[1], 10);
+        const m = parseInt(parts[0], 10);
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+        return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
+    }
+
+    /** Parse cron expression to day selection array [S,M,T,W,T,F,S] */
+    parseJobDays(job: CronJob): boolean[] {
+        const days = [false, false, false, false, false, false, false];
+        if (!job.schedule) return days;
+        const parts = job.schedule.split(' ');
+        if (parts.length < 5 || parts[4] === '*') return [true, true, true, true, true, true, true];
+        const dayNums = parts[4].split(',').map(d => parseInt(d, 10));
+        dayNums.forEach(d => { if (d >= 0 && d <= 6) days[d] = true; });
+        return days;
+    }
+
+    /** Get the execution status color for a specific day of a job.
+     *  Checks the most recent execution log for this job on the given day-of-week.
+     *  Returns: success (green), error (red), override (blue), skipped (yellow), upcoming (amber), or scheduled (gray). */
+    getJobDayStatus(job: CronJob, dayIndex: number): string {
+        // Find the most recent execution log for this job that ran on this day of week
+        const jobLogs = this.cronExecutionLogs.filter(log => {
+            if (log.job_id !== job.id && log.job_name !== job.name) return false;
+            const logDate = new Date(log.start_time);
+            // JS getDay(): 0=Sun,1=Mon...6=Sat — matches our dayLabels index (S=0,M=1...S=6)
+            return logDate.getDay() === dayIndex;
+        });
+
+        if (jobLogs.length === 0) {
+            // Day is scheduled but never ran yet → upcoming
+            return 'upcoming';
+        }
+
+        // Use the most recent log (logs are typically newest first, but sort to be sure)
+        const latest = jobLogs.sort((a, b) =>
+            new Date(b.start_time).getTime() - new Date(a.start_time).getTime()
+        )[0];
+
+        if (latest.triggered_by === 'manual' || latest.triggered_by === 'override') return 'override';
+        if (latest.status === 'success' || latest.status === 'completed') return 'success';
+        if (latest.status === 'failed' || latest.status === 'error') return 'error';
+        if (latest.status === 'skipped') return 'skipped';
+        if (latest.status === 'running' || latest.status === 'pending') return 'upcoming';
+        return 'success';
+    }
+
+    /** Map status to Tailwind bg color class */
+    getStatusColor(status: string): string {
+        const colors: { [key: string]: string } = {
+            success: 'bg-green-500',
+            error: 'bg-red-500',
+            override: 'bg-blue-500',
+            skipped: 'bg-yellow-500',
+            upcoming: 'bg-amber-400'
+        };
+        return colors[status] || 'bg-gray-400';
+    }
+
     addJob(): void {
         if (!this.newJobName.trim()) {
             this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Please enter a job name' });
             return;
         }
-        if (!this.newJobSchedule.trim()) {
-            this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Please enter a cron schedule' });
+        if (!this.newJobDays.some(d => d)) {
+            this.messageService.add({ severity: 'warn', summary: 'Validation', detail: 'Please select at least one day' });
             return;
         }
 
         this.savingJob = true;
+        const schedule = this.buildCronFromUI();
         const jobData: CronJobCreate = {
             name: this.newJobName,
-            schedule: this.newJobSchedule,
-            is_active: this.newJobActive
+            schedule,
+            is_active: this.newJobRepeat
         };
 
         this.apiService.createCronJob(jobData).subscribe({
             next: (res) => {
                 this.messageService.add({ severity: 'success', summary: 'Created', detail: res.message });
                 this.newJobName = '';
-                this.newJobSchedule = '0 9 * * 1-5';
-                this.newJobActive = true;
+                this.newJobTime = '18:30';
+                this.newJobDays = [false, true, true, true, true, true, false];
+                this.newJobRepeat = true;
                 this.loadCronJobs();
                 this.loadAllLogs();
                 this.savingJob = false;
@@ -696,22 +794,38 @@ export class Settings implements OnInit {
 
     // ==================== RESTORE & EMAIL ====================
 
-    sendEmail(batchName: string): void {
-        this.messageService.add({ severity: 'info', summary: 'Sending...', detail: `Sending email for ${batchName}` });
-        // The backend doesn't have a dedicated email endpoint yet, show info
-        setTimeout(() => {
-            this.messageService.add({ severity: 'success', summary: 'Sent', detail: `Email sent for ${batchName}` });
-            this.loadAllLogs();
-        }, 1000);
+    sendEmail(item: RestoreData): void {
+        this.messageService.add({ severity: 'info', summary: 'Sending...', detail: `Sending email for ${item.details}` });
+        this.apiService.sendEmail({
+            subject: `Batch Report: ${item.details}`,
+            body: `Batch "${item.details}" processed on ${item.date} at ${item.time} (${item.process})`
+        }).subscribe({
+            next: (res) => {
+                this.messageService.add({ severity: 'success', summary: 'Sent', detail: res.message || `Email sent for ${item.details}` });
+                this.loadAllLogs();
+            },
+            error: (err) => {
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.detail || `Failed to send email for ${item.details}` });
+            }
+        });
     }
 
-    removeData(batchName: string): void {
-        this.messageService.add({ severity: 'warn', summary: 'Removing...', detail: `Removing data for ${batchName}` });
-        setTimeout(() => {
-            this.messageService.add({ severity: 'success', summary: 'Removed', detail: `Data removed for ${batchName}` });
-            this.loadRestoreData();
-            this.loadAllLogs();
-        }, 1000);
+    removeData(item: RestoreData): void {
+        if (item.id) {
+            this.messageService.add({ severity: 'warn', summary: 'Removing...', detail: `Removing data for ${item.details}` });
+            this.apiService.deleteBackup(item.id).subscribe({
+                next: (res) => {
+                    this.messageService.add({ severity: 'success', summary: 'Removed', detail: res.message || `Data removed for ${item.details}` });
+                    this.loadRestoreData();
+                    this.loadAllLogs();
+                },
+                error: (err) => {
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: err.error?.detail || `Failed to remove data for ${item.details}` });
+                }
+            });
+        } else {
+            this.messageService.add({ severity: 'warn', summary: 'Warning', detail: 'No backup ID available for this entry' });
+        }
     }
 
     // ==================== LOGS & REVERT ====================
@@ -849,9 +963,10 @@ export class Settings implements OnInit {
         const colors: { [key: string]: string } = {
             success: 'bg-green-500',
             error: 'bg-red-500',
-            skipped: 'bg-blue-500',
-            override: 'bg-blue-400',
-            notStarted: 'bg-yellow-500'
+            override: 'bg-blue-500',
+            skipped: 'bg-yellow-500',
+            upcoming: 'bg-amber-400',
+            notStarted: 'bg-amber-400'
         };
         return colors[type] || 'bg-gray-500';
     }
