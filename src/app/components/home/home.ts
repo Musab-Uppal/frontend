@@ -12,15 +12,10 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
 import { CustomTableComponent, TableColumn, TableRow, TableConfig } from '../custom-table/custom-table.component';
 import { FilterDialogComponent, FilterCondition } from '../filter-dialog/filter-dialog.component';
-<<<<<<< HEAD
 import { ApiService, ColorProcessed, SearchFilter, Rule, RuleConditionBackend, Preset } from '../../services/api.service';
 import { StackedChartComponent } from '../stacked-chart/stacked-chart.component';
 
 @Component({
-=======
-import { ApiService, ColorProcessed, SearchFilter, Rule, RuleConditionBackend } from '../../services/api.service';
-import { StackedChartComponent } from '../stacked-chart/stacked-chart.component';@Component({
->>>>>>> 75fba563da5e238a63d3eb888a180cc9c2c563fa
     selector: 'app-home',
     standalone: true,
     imports: [
