@@ -882,4 +882,51 @@ export class ApiService {
     getPresetStats(): Observable<any> {
         return this.http.get<any>(`${this.baseUrl}/api/presets/stats`);
     }
+
+    // ==================== EMAIL ====================
+
+    sendEmail(payload: { to_emails?: string[]; subject?: string; body?: string; attach_output_file?: boolean }): Observable<{ success: boolean; message: string }> {
+        return this.http.post<{ success: boolean; message: string }>(`${this.baseUrl}/api/email/send`, payload);
+    }
+
+    getEmailConfig(): Observable<any> {
+        return this.http.get<any>(`${this.baseUrl}/api/email/config`);
+    }
+
+    testEmailConnection(): Observable<{ success: boolean; message: string }> {
+        return this.http.post<{ success: boolean; message: string }>(`${this.baseUrl}/api/email/test`, {});
+    }
+
+    getEmailLogs(limit: number = 50): Observable<{ logs: any[]; count: number }> {
+        const params = new HttpParams().set('limit', limit.toString());
+        return this.http.get<{ logs: any[]; count: number }>(`${this.baseUrl}/api/email/logs`, { params });
+    }
+
+    // ==================== BACKUP & RESTORE ====================
+
+    getBackupHistory(limit: number = 50): Observable<{ backups: any[]; count: number }> {
+        const params = new HttpParams().set('limit', limit.toString());
+        return this.http.get<{ backups: any[]; count: number }>(`${this.baseUrl}/api/backup/history`, { params });
+    }
+
+    createBackup(description?: string, createdBy?: string): Observable<{ message: string; backup: any }> {
+        const formData = new FormData();
+        if (description) formData.append('description', description);
+        if (createdBy) formData.append('created_by', createdBy);
+        return this.http.post<{ message: string; backup: any }>(`${this.baseUrl}/api/backup/create`, formData);
+    }
+
+    restoreBackup(backupId: number, restoredBy?: string): Observable<{ message: string; result: any }> {
+        const formData = new FormData();
+        if (restoredBy) formData.append('restored_by', restoredBy);
+        return this.http.post<{ message: string; result: any }>(`${this.baseUrl}/api/backup/restore/${backupId}`, formData);
+    }
+
+    deleteBackup(backupId: number): Observable<{ message: string }> {
+        return this.http.delete<{ message: string }>(`${this.baseUrl}/api/backup/history/${backupId}`);
+    }
+
+    getBackupStats(): Observable<any> {
+        return this.http.get<any>(`${this.baseUrl}/api/backup/stats`);
+    }
 }
