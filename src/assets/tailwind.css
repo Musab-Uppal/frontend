@@ -8,6 +8,7 @@
     --breakpoint-lg: 992px;
     --breakpoint-xl: 1200px;
     --breakpoint-2xl: 1920px;
+    --font-poppins: 'Poppins', sans-serif;
 }
 
 /* PrimeNG Theme Override - Remove ALL Green Colors */
@@ -138,3 +139,22 @@
 [class*='p-'] {
     /* This will catch any component using primary color */
 }
+
+.asset-selector
+{
+    border: none !important;
+    box-shadow: none !important;
+}
+.main-title {
+                font-family: 'Degular Display', 'Poppins', sans-serif;
+                font-size: 22px;
+                font-weight: 500;
+                letter-spacing: -0.02em;
+                }
+
+                .secondary-title {
+                font-family: 'Degular Display', 'Poppins', sans-serif;
+                font-size: 20px;
+                font-weight: 400;
+                color: var(--text-color-secondary);
+                }

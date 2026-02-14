@@ -4,6 +4,43 @@
 @use 'primeicons/primeicons.css';
 @use './demo/demo.scss';
 
+@font-face {
+    font-family: 'Degular Display';
+    src:
+        local('Degular Display'),
+        local('DegularDisplay-Regular'),
+        url('./fonts/degular-display/fonnts.com-DegularDisplayDemo-Regular.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Degular Display';
+    src:
+        local('Degular Display Medium'),
+        local('DegularDisplay-Medium'),
+        url('./fonts/degular-display/fonnts.com-DegularDisplayDemo-Medium.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Degular Display';
+    src:
+        local('Degular Display Semibold'),
+        local('DegularDisplay-Semibold'),
+        url('./fonts/degular-display/fonnts.com-DegularDisplayDemo-Semibold.otf') format('opentype');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+html,
+body {
+    font-family: 'Degular Display', 'Poppins', sans-serif;
+}
 :root {
     --bg-page: #f9fafb;
     --bg-card: #ffffff;

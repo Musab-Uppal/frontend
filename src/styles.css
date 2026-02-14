@@ -1,8 +1,42 @@
 @tailwind utilities;
 
+@font-face {
+    font-family: 'Degular Display';
+    src:
+        url('/assets/fonts/degular-display/DegularDisplay-Regular.woff2') format('woff2'),
+        url('/assets/fonts/degular-display/DegularDisplay-Regular.woff') format('woff');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Degular Display';
+    src:
+        url('/assets/fonts/degular-display/DegularDisplay-Medium.woff2') format('woff2'),
+        url('/assets/fonts/degular-display/DegularDisplay-Medium.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Degular Display';
+    src:
+        url('/assets/fonts/degular-display/DegularDisplay-Semibold.woff2') format('woff2'),
+        url('/assets/fonts/degular-display/DegularDisplay-Semibold.woff') format('woff');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
 html,
 body {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Degular Display', 'Poppins', sans-serif;
+}
+
+.degular-display {
+    font-family: 'Degular Display', 'Poppins', sans-serif;
 }
 
 .poppins-thin {
@@ -111,4 +145,17 @@ body {
     font-family: 'Poppins', sans-serif;
     font-weight: 900;
     font-style: italic;
+}
+.main-title {
+    font-family: 'Degular Display', 'Poppins', sans-serif;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+}
+
+.secondary-title {
+    font-family: 'Degular Display', 'Poppins', sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--text-color-secondary);
 }

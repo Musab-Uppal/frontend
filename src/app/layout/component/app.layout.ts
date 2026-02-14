@@ -8,6 +8,7 @@ import { AppFooter } from './app.footer';
 import { LayoutService } from '../service/layout.service';
 import { TableStateService } from '../../components/home/table-state.service'; // Adjust path as needed
 
+
 @Component({
     selector: 'app-layout',
     standalone: true,
@@ -47,6 +48,7 @@ import { TableStateService } from '../../components/home/table-state.service'; /
             .layout-overlay .layout-main-container {
                 margin-left: 0;
             }
+
         `
     ]
 })

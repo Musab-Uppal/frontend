@@ -19,7 +19,7 @@ import { filter, Subscription } from 'rxjs';
         <div class="layout-topbar-logo-container">
             <a class="layout-topbar-logo" routerLink="/">
                 <div class="flex flex-col leading-tight">
-                    <span class="font-bold whitespace-nowrap">Market Pulse</span>
+                    <span class="main-title font-bold whitespace-nowrap">Market Pulse</span>
                     <span class="text-xs text-gray-500 whitespace-nowrap">
                         Movement Intelligence
                     </span>
@@ -31,7 +31,11 @@ import { filter, Subscription } from 'rxjs';
                 class="layout-menu-button"
                 (click)="onMenuToggle($event)">
                 <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+<<<<<<< HEAD
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M7.6753 1.77128H1.7713C1.30128 1.77128 0.850801 1.9578 0.519051 2.29023C0.186626 2.62198 0 3.07245 0 3.54248V12.989C0 13.459 0.186621 13.9094 0.519051 14.2412C0.850801 14.5737 1.30128 14.7602 1.7713 14.7602H7.6753V15.941C7.6753 16.2669 7.93975 16.5314 8.26562 16.5314C8.5916 16.5314 8.85605 16.2669 8.85605 15.941V14.7602H14.7601C15.2301 14.7602 15.6806 14.5737 16.0123 14.2412C16.3447 13.9094 16.5312 13.459 16.5312 12.989V3.54248C16.5312 3.07245 16.3447 2.62198 16.0123 2.29023C15.6806 1.9578 15.2301 1.77128 14.7601 1.77128H8.85605V0.590425C8.85605 0.26455 8.5916 0 8.26562 0C7.93975 0 7.6753 0.26455 7.6753 0.590425V1.77128ZM7.6753 2.95202V13.5793H1.7713C1.61476 13.5793 1.46428 13.5173 1.35383 13.4062C1.24289 13.2959 1.18088 13.1453 1.18088 12.9889V3.54235C1.18088 3.38591 1.24289 3.23533 1.35383 3.12488C1.46428 3.01394 1.61478 2.95193 1.7713 2.95193L7.6753 2.95202ZM8.85605 2.95202H14.7601C14.9165 2.95202 15.0671 3.01404 15.1775 3.12497C15.2885 3.23542 15.3505 3.386 15.3505 3.54245V12.9889C15.3505 13.1454 15.2885 13.296 15.1775 13.4063C15.0671 13.5174 14.9165 13.5794 14.7601 13.5794H8.85605V2.95202Z" fill="currentColor"/>
+=======
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M7.6753 1.77128H1.7713C1.30128 1.77128 0.850801 1.9578 0.519051 2.29023C0.186626 2.62198 0 3.07245 0 3.54248V12.989C0 13.459 0.186621 13.9094 0.519051 14.2412C0.850801 14.5737 1.30128 14.7602 1.7713 14.7602H7.6753V15.941C7.6753 16.2669 7.93975 16.5314 8.26562 16.5314C8.5916 16.5314 8.85605 16.2669 8.85605 15.941V14.7602H14.7601C15.2301 14.7602 15.6806 14.5737 16.0123 14.2412C16.3447 13.9094 16.5312 13.459 16.5312 12.989V3.54248C16.5312 3.07245 16.3447 2.62198 16.0123 2.29023C15.6806 1.9578 15.2301 1.77128 14.7601 1.77128H8.85605V0.590425C8.85605 0.26455 8.5916 0 8.26562 0C7.93975 0 7.6753 0.26455 7.6753 0.590425V1.77128ZM7.6753 2.95202V13.5793H1.7713C1.61476 13.5793 1.46428 13.5173 1.35383 13.4062C1.24289 13.2959 1.18088 13.1453 1.18088 12.9889V3.54235C1.18088 3.38591 1.24289 3.23533 1.35383 3.12488C1.46428 3.01394 1.61478 2.95193 1.7713 2.95193L7.6753 2.95202ZM8.85605 2.95202H14.7601C14.9165 2.95202 15.0671 3.01404 15.1775 3.12497C15.2885 3.23542 15.3505 3.386 15.3505 3.54245V12.9889C15.3505 13.1454 15.2885 13.296 15.1775 13.4063C15.0671 13.5174 14.9165 13.5794 14.7601 13.5794H8.85605V2.95202Z" fill="black"/>
+>>>>>>> 75fba563da5e238a63d3eb888a180cc9c2c563fa
                 </svg>
             </button>
 
@@ -40,7 +44,7 @@ import { filter, Subscription } from 'rxjs';
             <!-- PAGE TITLE (HOME ONLY) -->
             <span
                 *ngIf="isHomeRoute"
-                class="hidden md:block text-base font-bold text-gray-950 whitespace-nowrap">
+                class="main-title hidden md:block text-base font-bold text-gray-950 whitespace-nowrap">
                 CLO Colors Data & Insights
             </span>
         </div>
@@ -116,7 +120,7 @@ import { filter, Subscription } from 'rxjs';
                 display: flex;
                 align-items: center;
                 gap: 0.5rem;
-                padding: 0.6rem 1rem;
+                padding: 0.2rem 0.75rem;
                 border-radius: 9999px;
                 border: 1px solid #e5e7eb; /* soft gray */
                 background: #ffffff;
@@ -133,12 +137,10 @@ import { filter, Subscription } from 'rxjs';
                 min-width: 110px;
             }
 
-            /* REMOVE INNER BORDER AFTER GREEN DOT */
-            :host ::ng-deep .asset-selector .p-dropdown {
+            /* REMOVE BORDER/SHADOW FROM THE RENDERED P-SELECT ROOT */
+            :host ::ng-deep p-select.asset-selector.p-select {
                 border: none !important;
-                background: transparent !important;
                 box-shadow: none !important;
-                padding: 0 !important;
             }
 
             /* NEXT RUN */
@@ -188,7 +190,8 @@ import { filter, Subscription } from 'rxjs';
             }
 
             .user-name {
-                font-size: 0.875rem;
+                font-family: 'Degular Display', 'Poppins', sans-serif;
+                font-size: 17px;
                 font-weight: 600;
             }
 
@@ -201,7 +204,7 @@ import { filter, Subscription } from 'rxjs';
                 width: 2.5rem;
                 height: 2.5rem;
                 border-radius: 0.5rem;
-                border: 1px solid #e5e7eb;
+
                 background: #f9fafb;
                 cursor: pointer;
                 display: flex;
@@ -211,12 +214,15 @@ import { filter, Subscription } from 'rxjs';
                 margin-left: 0.5rem;
             }
 
-            .layout-menu-button:hover {
-                background-color: #e5e7eb;
-            }
 
+<<<<<<< HEAD
             .layout-menu-button svg {
                 color: #374151;
+=======
+
+            .layout-menu-button svg {
+                display: block;
+>>>>>>> 75fba563da5e238a63d3eb888a180cc9c2c563fa
             }
 
             @media (max-width: 768px) {
@@ -226,6 +232,21 @@ import { filter, Subscription } from 'rxjs';
                     display: none;
                 }
             }
+            .main-title {
+                font-family: 'Degular Display', 'Poppins', sans-serif;
+                font-size: 22px;
+                font-weight: 500;
+                letter-spacing: -0.02em;
+                }
+
+                .secondary-title {
+                font-family: 'Degular Display', 'Poppins', sans-serif;
+                font-size: 20px;
+                font-weight: 400;
+                color: var(--text-color-secondary);
+                }
+
+
         `
     ]
 })

@@ -12,10 +12,15 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
 import { CustomTableComponent, TableColumn, TableRow, TableConfig } from '../custom-table/custom-table.component';
 import { FilterDialogComponent, FilterCondition } from '../filter-dialog/filter-dialog.component';
+<<<<<<< HEAD
 import { ApiService, ColorProcessed, SearchFilter, Rule, RuleConditionBackend, Preset } from '../../services/api.service';
 import { StackedChartComponent } from '../stacked-chart/stacked-chart.component';
 
 @Component({
+=======
+import { ApiService, ColorProcessed, SearchFilter, Rule, RuleConditionBackend } from '../../services/api.service';
+import { StackedChartComponent } from '../stacked-chart/stacked-chart.component';@Component({
+>>>>>>> 75fba563da5e238a63d3eb888a180cc9c2c563fa
     selector: 'app-home',
     standalone: true,
     imports: [
@@ -264,7 +269,7 @@ export class Home implements OnInit {
     toggleTableExpansion() {
         console.log('📄 Toggling table expansion - Current state:', this.isTableExpanded);
         this.isTableExpanded = !this.isTableExpanded;
-        
+
         // Manage sidebar visibility
         if (this.isTableExpanded) {
             // Collapse sidebar and hide body scroll
@@ -281,7 +286,7 @@ export class Home implements OnInit {
                 (sidebar as HTMLElement).style.display = 'block';
             }
         }
-        
+
         console.log('📄 New expanded state:', this.isTableExpanded);
     }
 
@@ -347,7 +352,7 @@ export class Home implements OnInit {
     exportAll() {
         console.log('📤 Exporting data...');
         const dataToExport = this.selectedRows.length > 0 ? this.selectedRows : this.tableData;
-        
+
         if (dataToExport.length === 0) {
             this.messageService.add({
                 severity: 'warn',
@@ -363,8 +368,8 @@ export class Home implements OnInit {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        const fileName = this.selectedRows.length > 0 
-            ? `marketpulse_selected_rows_${new Date().toISOString().split('T')[0]}.csv` 
+        const fileName = this.selectedRows.length > 0
+            ? `marketpulse_selected_rows_${new Date().toISOString().split('T')[0]}.csv`
             : `marketpulse_colors_${new Date().toISOString().split('T')[0]}.csv`;
         link.download = fileName;
         link.click();
