@@ -12,7 +12,7 @@ import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { MessageService } from 'primeng/api';
 import { CustomTableComponent, TableColumn, TableRow, TableConfig } from '../custom-table/custom-table.component';
 import { FilterDialogComponent, FilterCondition } from '../filter-dialog/filter-dialog.component';
-import { ApiService, ColorProcessed, SearchFilter, Rule, RuleConditionBackend } from '../../services/api.service';
+import { ApiService, ColorProcessed, SearchFilter, Rule, RuleConditionBackend, Preset } from '../../services/api.service';
 import { StackedChartComponent } from '../stacked-chart/stacked-chart.component';
 
 @Component({
@@ -58,6 +58,15 @@ export class Home implements OnInit {
     ruleSearchText = '';
     loadingRules = false;
     runningRules = false;
+
+    // Run Automation state
+    showAutomationMenu = false;
+    runningAutomation = false;
+
+    // Presets state
+    availablePresets: Preset[] = [];
+    selectedPresetId: number | null = null;
+    loadingPresets = false;
 
     // Active filters for display as chips
     activeFilters: FilterCondition[] = [];
@@ -480,13 +489,186 @@ export class Home implements OnInit {
         this.loadDataFromBackend();
     }
 
+    // ==================== RUN AUTOMATION ====================
+
+    runAutomation(override: boolean) {
+        this.showAutomationMenu = false;
+
+        if (override) {
+            this.runningAutomation = true;
+            this.messageService.add({
+                severity: 'info',
+                summary: 'Override & Run',
+                detail: 'Overriding cron schedule and running automation...'
+            });
+
+            this.apiService.getActiveCronJobs().subscribe({
+                next: (response) => {
+                    if (response.jobs.length === 0) {
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'No Active Jobs',
+                            detail: 'No active cron jobs found to override'
+                        });
+                        this.runningAutomation = false;
+                        return;
+                    }
+
+                    const job = response.jobs[0];
+                    this.apiService.triggerCronJob(job.id, true).subscribe({
+                        next: (res) => {
+                            this.messageService.add({
+                                severity: 'success',
+                                summary: 'Automation Complete',
+                                detail: res.message || 'Cron job overridden and executed'
+                            });
+                            this.loadDataFromBackend();
+                            this.runningAutomation = false;
+                        },
+                        error: (err) => {
+                            this.messageService.add({
+                                severity: 'error',
+                                summary: 'Error',
+                                detail: err.error?.detail || 'Failed to trigger automation'
+                            });
+                            this.runningAutomation = false;
+                        }
+                    });
+                },
+                error: () => {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Failed to fetch active cron jobs'
+                    });
+                    this.runningAutomation = false;
+                }
+            });
+        } else {
+            if (this.tableData.length === 0) {
+                this.messageService.add({
+                    severity: 'warn',
+                    summary: 'No Data',
+                    detail: 'No data in the table to process'
+                });
+                return;
+            }
+
+            this.runningAutomation = true;
+            this.messageService.add({
+                severity: 'info',
+                summary: 'Processing',
+                detail: 'Running all active rules...'
+            });
+
+            this.apiService.getActiveRules().subscribe({
+                next: (response) => {
+                    const activeRules = response.rules;
+                    if (activeRules.length === 0) {
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'No Active Rules',
+                            detail: 'No active rules found. Go to Settings to configure rules.'
+                        });
+                        this.runningAutomation = false;
+                        return;
+                    }
+
+                    const originalCount = this.tableData.length;
+
+                    const filteredData = this.tableData.filter(row => {
+                        for (const rule of activeRules) {
+                            if (this.evaluateRule(row, rule)) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    });
+
+                    const excludedCount = originalCount - filteredData.length;
+                    this.tableData = filteredData;
+
+                    this.apiService.createBackup('Automation run - ' + new Date().toISOString()).subscribe({
+                        next: () => {
+                            this.messageService.add({
+                                severity: 'success',
+                                summary: 'Automation Complete',
+                                detail: `${activeRules.length} rule(s) applied. ${excludedCount} row(s) excluded, ${filteredData.length} remaining. Data saved.`
+                            });
+                        },
+                        error: () => {
+                            this.messageService.add({
+                                severity: 'success',
+                                summary: 'Automation Complete',
+                                detail: `${activeRules.length} rule(s) applied. ${excludedCount} row(s) excluded, ${filteredData.length} remaining.`
+                            });
+                        }
+                    });
+
+                    this.runningAutomation = false;
+                },
+                error: () => {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Failed to fetch active rules'
+                    });
+                    this.runningAutomation = false;
+                }
+            });
+        }
+    }
+
+    // ==================== PRESETS ====================
+
+    loadPresets() {
+        this.loadingPresets = true;
+        this.apiService.getPresets().subscribe({
+            next: (response) => {
+                this.availablePresets = response.presets;
+                this.loadingPresets = false;
+            },
+            error: () => {
+                this.loadingPresets = false;
+            }
+        });
+    }
+
+    applyPreset(presetId: number) {
+        const preset = this.availablePresets.find(p => p.id === presetId);
+        if (!preset) return;
+
+        this.selectedPresetId = presetId;
+
+        const filters: FilterCondition[] = preset.conditions.map(c => ({
+            column: c.column,
+            operator: c.operator,
+            values: c.value,
+            values2: c.value2 || '',
+            columnDisplay: c.column,
+            operatorDisplay: c.operator,
+            logicalOperator: 'AND' as const
+        }));
+
+        this.activeFilters = filters;
+        this.onFiltersApplied({ conditions: filters, subgroups: [] });
+
+        this.messageService.add({
+            severity: 'success',
+            summary: 'Preset Loaded',
+            detail: `Loaded preset "${preset.name}" with ${preset.conditions.length} filter(s)`
+        });
+    }
+
     // ==================== RUN RULES ====================
 
     openRunRulesDialog() {
         this.showRunRulesDialog = true;
         this.ruleSearchText = '';
         this.selectedRuleIds.clear();
+        this.selectedPresetId = null;
         this.loadRulesForDialog();
+        this.loadPresets();
     }
 
     loadRulesForDialog() {
